@@ -74,15 +74,17 @@ jobs:
             --max-turns 50
             --allowedTools Bash,Read,Write,Edit,MultiEdit,GlobTool,GrepTool
 
-      - name: Report
-        if: always()
-        run: |
-          echo "## Verification Complete" >> $GITHUB_STEP_SUMMARY
-          echo "Check the Claude Code step above for the PASS/FAIL report." >> $GITHUB_STEP_SUMMARY
-
       - name: Upload Claude execution log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: claude-execution-log
           path: /home/runner/work/_temp/claude-execution-output.json
+
+      - name: Report
+        if: always()
+        run: |
+          echo "## Verification Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Check the Claude Code step above for the PASS/FAIL report." >> $GITHUB_STEP_SUMMARY
+
+
