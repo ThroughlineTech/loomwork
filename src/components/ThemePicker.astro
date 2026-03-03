@@ -1,0 +1,131 @@
+---
+/**
+ * ThemePicker.astro — Inline theme picker for embedding in content pages.
+ *
+ * Renders a styled dropdown that lets visitors hot-swap between all
+ * registered themes. Reads the same theme registry JSON injected by
+ * Base.astro and writes to the same localStorage key as ReaderControls.
+ */
+import { THEMES, type ThemeName } from "../themes/_index";
+
+const themeEntries = Object.entries(THEMES) as [ThemeName, (typeof THEMES)[ThemeName]][];
+---
+
+<div class="tp" data-theme-picker>
+  <label class="tp__label" for="tp-select">Theme</label>
+  <select class="tp__select" id="tp-select" data-tp-select>
+    {themeEntries.map(([name, meta]) => (
+      <option value={name} title={meta.tagline}>
+        {name.charAt(0).toUpperCase() + name.slice(1)}
+        {" — " + meta.tagline}
+      </option>
+    ))}
+  </select>
+</div>
+
+<style>
+  .tp {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-block: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg-alt);
+  }
+
+  .tp__label {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .tp__select {
+    flex: 1;
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+
+  .tp__select:hover,
+  .tp__select:focus {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+</style>
+
+<script>
+  (function () {
+    const LS_KEY = "lw-reader";
+    const select = document.querySelector("[data-tp-select]") as HTMLSelectElement | null;
+    if (!select || select.hasAttribute("data-tp-init")) return;
+    select.setAttribute("data-tp-init", "");
+
+    // Read theme registry from Base.astro's injected JSON
+    let themeMap: Record<string, { fonts_url: string; tagline: string }> = {};
+    let defaultTheme = "";
+    try {
+      const raw = JSON.parse(
+        document.getElementById("lw-theme-map")?.textContent || "{}"
+      );
+      themeMap = raw.themes || {};
+      defaultTheme = raw.defaultTheme || "";
+    } catch {}
+
+    // Pre-select current theme
+    function loadPrefs(): Record<string, string> {
+      try {
+        return JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+    const prefs = loadPrefs();
+    const current = prefs.theme || defaultTheme || "";
+    if (current && select.querySelector(`option[value="${current}"]`)) {
+      select.value = current;
+    }
+
+    // Swap on change
+    select.addEventListener("change", () => {
+      const picked = select.value;
+
+      // Swap theme CSS link
+      const themeLink = document.getElementById("lw-theme") as HTMLLinkElement | null;
+      if (themeLink && picked) {
+        themeLink.href = "/themes/" + picked + ".css";
+      }
+
+      // Swap fonts link
+      const fontsLink = document.getElementById("lw-fonts") as HTMLLinkElement | null;
+      const meta = themeMap[picked];
+      if (fontsLink && meta?.fonts_url) {
+        fontsLink.href = meta.fonts_url;
+      }
+
+      // Save to localStorage (sync with ReaderControls)
+      const p = loadPrefs();
+      // If picked === defaultTheme, store "" so reader controls shows "(default)"
+      p.theme = picked === defaultTheme ? "" : picked;
+      localStorage.setItem(LS_KEY, JSON.stringify(p));
+
+      // Sync the floating ReaderControls dropdown if it exists
+      const rcSelect = document.querySelector("[data-rc-theme]") as HTMLSelectElement | null;
+      if (rcSelect) rcSelect.value = p.theme;
+    });
+  })();
+</script>

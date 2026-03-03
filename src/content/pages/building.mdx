@@ -1,0 +1,294 @@
+---
+title: "Building Your Site"
+description: "How to add pages, write posts, use components, organize content, and make Loomwork yours."
+section: "guide"
+nav_order: 20
+template: "guide"
+date_created: 2026-03-02
+date_updated: 2026-03-02
+---
+
+import Callout from '../../components/Callout.astro';
+
+## How Loomwork Works
+
+Loomwork has a simple rule: **file path = URL**. Drop an `.mdx` file in the right folder and it becomes a page on your site. No routing config, no CMS, no database.
+
+There are two content folders:
+
+| Folder | Purpose | URL pattern |
+|--------|---------|-------------|
+| `src/content/pages/` | Permanent site pages | File path → URL. `pages/docs/intro.mdx` → `/docs/intro` |
+| `src/content/posts/` | Blog / news / updates | Date-driven. For chronological content. |
+
+Most sites only need `pages/`. The `posts/` folder is optional — delete it if you don't need a blog.
+
+## Creating a Page
+
+Create an `.mdx` file in `src/content/pages/`. Every page needs YAML frontmatter at the top:
+
+```mdx
+---
+title: "Getting Started"
+description: "Learn how to set up your project."
+template: "default"
+---
+
+Your content goes here. Write Markdown as usual.
+
+## This becomes a section heading
+
+Regular paragraphs, **bold**, *italic*, `code`, [links](https://example.com) — 
+it all works.
+```
+
+Save the file, and the page is live at the URL matching its path.
+
+### Required frontmatter
+
+Every page needs at minimum:
+
+```yaml
+---
+title: "Page Title"          # Shows in the browser tab and page header
+description: "Short summary"  # Shows in search results (max 160 chars)
+---
+```
+
+### Optional frontmatter
+
+```yaml
+---
+template: "default"           # "default", "landing", "guide", or "tool"
+section: "docs"               # Group related pages
+nav_order: 10                 # Sort order within a section
+draft: true                   # Hide from the built site
+date_created: 2026-03-01      # When this page was written
+date_updated: 2026-03-02      # Shows "Last updated" on the page
+hero_image: "/images/hero.jpg" # Full-width image at top
+hero_alt: "Description"       # Alt text for the hero image
+tags: ["tutorial", "setup"]   # Categorize your content
+noindex: true                 # Hide from search engines
+---
+```
+
+## Page Templates
+
+The `template` field controls the page layout:
+
+### default
+Standard reading layout with centered content column. Use for most pages.
+
+```yaml
+template: "default"
+```
+
+### guide
+Like this page. Adds a sticky table of contents sidebar on desktop that auto-generates from your headings. Use for long-form documentation.
+
+```yaml
+template: "guide"
+```
+
+<Callout type="tip" title="TOC comes from your headings">
+  The table of contents is generated automatically from your `##` and `###` headings. No configuration needed — just write your headings and the sidebar appears.
+</Callout>
+
+### landing
+Wide layout with no sidebar. Use for marketing pages, the homepage, or anything that needs more horizontal space.
+
+```yaml
+template: "landing"
+```
+
+### tool
+Minimal chrome, wide layout. Use for interactive tools, calculators, or embedded apps.
+
+```yaml
+template: "tool"
+```
+
+## Organizing with Folders
+
+Nest folders inside `src/content/pages/` to create URL hierarchies:
+
+```
+src/content/pages/
+├── about.mdx                  → /about
+├── pricing.mdx                → /pricing
+├── docs/
+│   ├── intro.mdx              → /docs/intro
+│   ├── installation.mdx       → /docs/installation
+│   └── configuration.mdx      → /docs/configuration
+└── tutorials/
+    ├── first-project.mdx      → /tutorials/first-project
+    └── advanced-usage.mdx     → /tutorials/advanced-usage
+```
+
+That's the entire routing system. No config files, no route definitions.
+
+## Writing Blog Posts
+
+The `src/content/posts/` folder is for date-driven content — blog posts, news, updates, changelogs. It's **completely optional**. If your site doesn't need a blog, delete the folder.
+
+<Callout type="info" title="Posts need a route page">
+  Unlike `pages/` which has a built-in route, `posts/` doesn't ship with a listing page. If you want to use posts, you'll need to create a `src/pages/blog/[...slug].astro` route and a `/blog` index page. This is intentional — not every site needs a blog, and blog layouts vary wildly.
+</Callout>
+
+Post frontmatter is simpler:
+
+```yaml
+---
+title: "What We Shipped This Week"
+description: "New theme system, reader controls, and more."
+date: 2026-03-02
+author: "Dan"
+tags: ["release", "update"]
+---
+```
+
+The `date` field is required for posts (it's how they sort). The `author` field defaults to your `SITE.author` from config.
+
+## Using Components in MDX
+
+MDX lets you use Astro components inside your Markdown. Import them at the top of the file, below the frontmatter:
+
+```mdx
+---
+title: "My Page"
+description: "A page with components."
+---
+
+import Callout from '../../components/Callout.astro';
+import YouTube from '../../components/YouTube.astro';
+
+## Regular Markdown here
+
+Then drop in a component:
+
+<Callout type="tip" title="Pro tip">
+  This is a callout box. Use it for tips, warnings, and notes.
+</Callout>
+
+<YouTube id="dQw4w9WgXcQ" title="Video tutorial" />
+```
+
+### Built-in Components
+
+**Callout** — Highlighted box for tips, warnings, info, and danger messages:
+
+```mdx
+<Callout type="tip" title="Optional title">Content here</Callout>
+<Callout type="warning" title="Watch out">Content here</Callout>
+<Callout type="info" title="FYI">Content here</Callout>
+<Callout type="danger" title="Do not do this">Content here</Callout>
+```
+
+**YouTube** — Responsive embedded video:
+
+```mdx
+<YouTube id="VIDEO_ID" title="Accessible title" />
+```
+
+<Callout type="tip" title="Import paths">
+  The import path is relative to your MDX file. From `src/content/pages/docs/intro.mdx`, the import would be `import Callout from '../../../components/Callout.astro'` (one extra `../`). From `src/content/pages/mypage.mdx`, it's `import Callout from '../../components/Callout.astro'`.
+</Callout>
+
+## Adding Images
+
+Drop images in `public/images/` and reference them in your content:
+
+```markdown
+![Alt text](/images/my-screenshot.png)
+```
+
+Or use a hero image in frontmatter:
+
+```yaml
+---
+hero_image: "/images/hero-banner.jpg"
+hero_alt: "A description of the image"
+---
+```
+
+Images in `public/` are served as-is at the root URL. `public/images/photo.jpg` → `/images/photo.jpg`.
+
+## Editing site.config.ts
+
+This is where your site's identity lives. The key fields:
+
+```ts
+export const SITE = {
+  name: "My Site",                    // Shows in header + browser tab
+  tagline: "What my site is about",   // Shows on homepage
+  description: "For search engines",  // Meta description default
+  url: "https://mysite.com",          // Canonical URL
+
+  nav: [                              // Header navigation links
+    { label: "Docs", href: "/docs/intro" },
+    { label: "Blog", href: "/blog" },
+    { label: "About", href: "/about" },
+  ],
+
+  theme: "manuscript",                // See the Theming Guide
+  reader_controls: true,              // Gear icon with preferences
+
+  footer: {
+    company: "Your Company",
+    license: "MIT License",
+  },
+};
+```
+
+After editing, the site updates immediately in dev mode.
+
+## The File Map
+
+Here's what every file and folder does, so you know what to touch and what to leave alone:
+
+### Your files (edit freely)
+
+| File | What it does |
+|------|-------------|
+| `src/site.config.ts` | Site name, nav, footer, theme, all identity |
+| `src/styles/site.css` | Your CSS overrides — colors, fonts, custom styles |
+| `src/pages/index.astro` | Homepage layout and content |
+| `src/content/pages/**` | All your content pages |
+| `src/content/posts/**` | Blog posts (optional, delete if unused) |
+| `public/images/**` | Your images, favicons, etc. |
+| `wrangler.toml` | Cloudflare project name and routes |
+| `package.json` | Just the project name |
+| `README.md` | Your project's README |
+
+### Framework files (don't edit — updates come from loomwork)
+
+| File | What it does |
+|------|-------------|
+| `src/layouts/Base.astro` | Root HTML layout, head tags, theme loading |
+| `src/layouts/Content.astro` | Content page layout with TOC support |
+| `src/components/*` | Header, Footer, Callout, YouTube, etc. |
+| `src/styles/global.css` | CSS reset, base styles, utility classes |
+| `src/styles/themes.css` | Reader preference CSS (font size, width, etc.) |
+| `src/themes/_index.ts` | Theme registry |
+| `src/content.config.ts` | Content collection schemas |
+| `src/pages/[...slug].astro` | Dynamic route for content pages |
+| `public/themes/*.css` | Built-in theme CSS files |
+
+<Callout type="warning" title="Framework updates">
+  If you edit framework files, you'll get merge conflicts when pulling updates from the loomwork repo. Keep your customizations in `site.config.ts` and `site.css` — they're designed to never conflict.
+</Callout>
+
+## Quick-Start Checklist
+
+Starting a new site? Here's the sequence:
+
+1. Clone the repo and run `npm install && npm run dev`
+2. Edit `src/site.config.ts` — set your site name, nav links, and theme
+3. Delete the example pages in `src/content/pages/`
+4. Create your first page: `src/content/pages/index.mdx` (or keep the homepage as `src/pages/index.astro`)
+5. Add more pages as `.mdx` files — the file path becomes the URL
+6. Override styles in `src/styles/site.css` if needed
+7. Drop images in `public/images/`
+8. Push to GitHub → Cloudflare auto-deploys
+
+That's the whole workflow. Write Markdown, push, done.

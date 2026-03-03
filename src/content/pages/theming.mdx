@@ -1,0 +1,203 @@
+---
+title: "Theming Guide"
+description: "How to pick a theme, use reader controls, customize colors, and create your own Loomwork theme."
+section: "guide"
+nav_order: 30
+template: "guide"
+date_created: 2026-03-02
+date_updated: 2026-03-02
+---
+
+import Callout from '../../components/Callout.astro';
+import ThemePicker from '../../components/ThemePicker.astro';
+
+## Pick a Theme
+
+Open `src/site.config.ts` and change the `theme` field:
+
+```ts
+export const SITE = {
+  theme: "manuscript",  // ← change this
+  // ...
+};
+```
+
+That's it. Save, and your entire site updates — colors, fonts, spacing, dark mode palette, everything.
+
+## Available Themes
+
+**Try them now** — change the dropdown and this page transforms instantly:
+
+<ThemePicker />
+
+Loomwork ships with ten built-in themes. Each one includes a full light mode, automatic dark mode, and a curated font stack loaded from Google Fonts.
+
+| Theme | Vibe | Fonts |
+|-------|------|-------|
+| **Manuscript** | Warm editorial, like a long-form magazine article | Source Serif 4 + Source Sans 3 |
+| **Brutalist** | Raw, high-contrast, monospaced everything | Space Mono |
+| **Atelier** | Elegant and airy, lots of whitespace | Playfair Display + Work Sans |
+| **Terminal** | Green-on-black hacker aesthetic | Fira Code |
+| **Gazette** | Classic newspaper typesetting | Libre Baskerville + Inter |
+| **Alpine** | Clean and modern, professional docs | Inter |
+| **Campfire** | Warm and inviting, cozy reading | Lora + Nunito |
+| **Moonrise** | Dark by default, purple accents, glowing UI | Outfit + DM Sans |
+| **Fieldnotes** | Academic, old-paper feel | EB Garamond + Inconsolata |
+| **Neon** | Cyberpunk dark mode, vibrant accents | Space Grotesk + Inter |
+
+## Reader Controls
+
+The floating gear icon (⚙) in the bottom-right gives your visitors control over their reading experience — dark mode, font size, content width, and more. Enable it in config:
+
+```ts
+export const SITE = {
+  reader_controls: true,
+  // ...
+};
+```
+
+For a full walkthrough of every control with live demos, see the [Reader Controls guide](/reader-controls).
+
+<Callout type="info" title="Preferences are per-browser">
+  All reader preferences are saved in the visitor's browser (localStorage). They don't affect other visitors and they persist across page loads. Clearing browser data resets them to your site defaults.
+</Callout>
+
+## Customize a Theme
+
+Every theme sets CSS variables on `:root`. You can override any of them in `src/styles/site.css` — your overrides always win, regardless of which theme is active:
+
+```css
+/* src/styles/site.css */
+:root {
+  --color-accent: #2d6a4f;       /* override the accent color */
+  --font-heading: "Bitter", Georgia, serif;  /* swap the heading font */
+  --radius: 0;                   /* sharp corners */
+}
+```
+
+### Variables you can override
+
+**Colors:**
+`--color-bg`, `--color-bg-alt`, `--color-surface`, `--color-text`, `--color-text-muted`, `--color-accent`, `--color-accent-hover`, `--color-accent-light`, `--color-border`, `--color-code-bg`
+
+**Typography:**
+`--font-body`, `--font-heading`, `--font-mono`, `--text-base`, `--text-sm`, `--text-lg`, `--leading`
+
+**Layout:**
+`--content-width`, `--radius`, `--shadow-sm`, `--shadow-md`
+
+**Spacing:**
+`--space-xs`, `--space-sm`, `--space-md`, `--space-lg`, `--space-xl`, `--space-2xl`
+
+## Create Your Own Theme
+
+If the built-in themes don't fit, you can create a custom theme in three steps.
+
+### 1. Create the CSS file
+
+Add a file at `public/themes/mytheme.css`:
+
+```css
+/* public/themes/mytheme.css */
+
+/* Light mode (default) */
+:root {
+  --color-bg:           #fefefe;
+  --color-bg-alt:       #f5f5f5;
+  --color-surface:      #ffffff;
+  --color-text:         #111111;
+  --color-text-muted:   #666666;
+  --color-accent:       #e63946;
+  --color-accent-hover: #c1121f;
+  --color-accent-light: #fde8ea;
+  --color-border:       #e0e0e0;
+  --color-code-bg:      #1a1a2e;
+
+  --font-body:    'Your Font', system-ui, sans-serif;
+  --font-heading: 'Your Display Font', Georgia, serif;
+  --font-mono:    'Your Mono', ui-monospace, monospace;
+  --leading:      1.7;
+
+  --content-width: 52rem;
+  --radius:        0.5rem;
+}
+
+/* OS-level dark mode */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-dark="false"]) {
+    --color-bg:           #111111;
+    --color-bg-alt:       #1a1a1a;
+    --color-surface:      #222222;
+    --color-text:         #eeeeee;
+    --color-text-muted:   #999999;
+    --color-accent:       #ff6b6b;
+    --color-accent-hover: #ff8787;
+    --color-accent-light: #2a1a1a;
+    --color-border:       #333333;
+    --color-code-bg:      #0a0a14;
+  }
+}
+
+/* Manual dark toggle */
+:root[data-dark="true"] {
+  --color-bg:           #111111;
+  --color-bg-alt:       #1a1a1a;
+  --color-surface:      #222222;
+  --color-text:         #eeeeee;
+  --color-text-muted:   #999999;
+  --color-accent:       #ff6b6b;
+  --color-accent-hover: #ff8787;
+  --color-accent-light: #2a1a1a;
+  --color-border:       #333333;
+  --color-code-bg:      #0a0a14;
+}
+```
+
+<Callout type="warning" title="Dark mode needs both selectors">
+  The `@media (prefers-color-scheme: dark)` block handles visitors whose OS is in dark mode. The `:root[data-dark="true"]` block handles visitors who manually toggle dark mode via reader controls. You need both — they use the same color values.
+</Callout>
+
+### 2. Register it
+
+Open `src/themes/_index.ts` and add your theme:
+
+```ts
+export type ThemeName =
+  | "manuscript"
+  // ... existing themes
+  | "mytheme";       // ← add here
+
+export const THEMES: Record<ThemeName, ThemeMeta> = {
+  // ... existing themes
+  mytheme: {
+    css: "mytheme.css",
+    fonts_url: "https://fonts.googleapis.com/css2?family=Your+Font:wght@400;700&display=swap",
+    tagline: "Your theme's tagline.",
+  },
+};
+```
+
+If your theme uses system fonts only, set `fonts_url` to an empty string `""`.
+
+### 3. Activate it
+
+```ts
+// src/site.config.ts
+export const SITE = {
+  theme: "mytheme",
+  // ...
+};
+```
+
+Your custom theme now appears in the reader controls dropdown alongside the built-in themes.
+
+## No Theme at All
+
+If you leave `theme` empty or remove the field entirely, the site uses the framework defaults defined in `global.css` — system fonts, neutral warm colors. You can style everything via `site.css` overrides. This is how Loomwork worked before the theme system existed.
+
+```ts
+export const SITE = {
+  theme: "",  // no theme — just global.css + your site.css
+  // ...
+};
+```

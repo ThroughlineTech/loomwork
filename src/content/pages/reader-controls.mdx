@@ -1,0 +1,137 @@
+---
+title: "Reader Controls"
+description: "A hands-on guide to every reader control — try each one right on this page."
+section: "guide"
+nav_order: 35
+template: "guide"
+date_created: 2026-03-03
+date_updated: 2026-03-03
+---
+
+import Callout from '../../components/Callout.astro';
+import DemoControl from '../../components/DemoControl.astro';
+
+## Overview
+
+The Reader Controls panel gives visitors control over how they read your site — dark mode, font size, content width, and more. It lives behind the gear icon (⚙) in the bottom-right corner.
+
+Enable it in your config:
+
+```ts
+// src/site.config.ts
+export const SITE = {
+  reader_controls: true,
+};
+```
+
+Every control below is **live**. Change it here and the page updates instantly. Your choices are saved in your browser and persist across pages and visits.
+
+---
+
+## Theme
+
+Switch between all ten built-in themes. Each theme changes colors, fonts, spacing, and dark mode palette — the entire visual identity of the site.
+
+<DemoControl control="theme" />
+
+The site owner sets the default theme in `site.config.ts` with the `theme` field. Visitors can override it here; their choice is saved in their browser. New visitors always see the site default.
+
+For a deep dive on themes — including the full list, customization, and creating your own — see the [Theming Guide](/theming).
+
+---
+
+## Mode (Light / Dark)
+
+Toggle between light and dark mode. By default the site follows your operating system preference. Clicking the button overrides that.
+
+<DemoControl control="mode" />
+
+Every theme ships with hand-tuned dark mode colors. The toggle sets an explicit `data-dark="true"` or `data-dark="false"` attribute on the root element, overriding OS detection.
+
+<Callout type="tip" title="Try it">
+  Click the pill above — the entire page flips between light and dark. Look at the header, code blocks, and the controls themselves.
+</Callout>
+
+---
+
+## Font Size
+
+A five-stop slider from extra-small to extra-large. The default (`Default`) is already optimized for comfortable reading.
+
+<DemoControl control="fontsize" />
+
+| Stop | Label | Size |
+|------|-------|------|
+| 0 | XS | 1rem (16px) |
+| 1 | Small | 1.0625rem (17px) |
+| 2 | Default | 1.1875rem (19px) |
+| 3 | Large | 1.3125rem (21px) |
+| 4 | XL | 1.5rem (24px) |
+
+Drag the slider above and watch this paragraph's text size change in real time. The setting applies site-wide to all content pages.
+
+---
+
+## Contents (Table of Contents)
+
+Shows or hides the sticky table of contents sidebar. This control only affects pages using the `guide` template — like this page.
+
+<DemoControl control="toc" />
+
+When turned off, the sidebar collapses and the content column expands to fill the available width. Turn it back on and the sidebar reappears.
+
+<Callout type="info" title="Guide pages only">
+  On pages using the `default`, `landing`, or `tool` template, there's no TOC sidebar, so this toggle has no visible effect.
+</Callout>
+
+---
+
+## Width
+
+Controls the maximum width of the content column. Only affects content pages — the header, footer, and homepage stay unchanged.
+
+<DemoControl control="width" />
+
+| Setting | Width | Best for |
+|---------|-------|----------|
+| **Narrow** | 42rem | Focused reading, pure prose |
+| **Default** | 52rem | General use — the sweet spot |
+| **Wide** | 64rem | Code-heavy docs, wide tables |
+
+Click a chip above and watch the content column resize. This is especially useful for pages with code blocks or data tables that benefit from extra room.
+
+---
+
+## Focus
+
+Fades the header and footer to near-invisible, reducing visual noise so you can concentrate on the content. Hover over the header or footer area to bring them back temporarily.
+
+<DemoControl control="focus" />
+
+<Callout type="warning" title="Zen mode">
+  Focus mode (also called Zen mode internally) is designed for long-form reading sessions. Remember to turn it off when you're done — otherwise the nav stays faded on every page.
+</Callout>
+
+---
+
+## How It Works
+
+All preferences are stored as a single JSON object in `localStorage` under the key `lw-reader`. A blocking inline script in `<head>` reads it before the page paints, preventing any flash of unstyled content (FOUC).
+
+```json
+{
+  "dark": "true",
+  "fontSize": "lg",
+  "toc": "visible",
+  "width": "default",
+  "zen": "false",
+  "theme": "campfire"
+}
+```
+
+- **No server round-trips** — everything is client-side.
+- **Per-browser** — preferences don't follow users across devices.
+- **No cookies** — just `localStorage`.
+- **Clearing browser data** resets everything to the site defaults.
+
+The floating gear panel, the inline demos on this page, and any `ThemePicker` dropdowns all read and write the same `lw-reader` key, so they stay perfectly in sync.

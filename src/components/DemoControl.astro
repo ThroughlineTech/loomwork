@@ -1,0 +1,474 @@
+---
+/**
+ * DemoControl.astro — Renders a single reader-control demo inline in content.
+ *
+ * Props:
+ *   control: "mode" | "fontsize" | "toc" | "width" | "focus" | "theme"
+ *
+ * Each variant renders the same UI as ReaderControls but standalone,
+ * wired to the same localStorage key so changes sync everywhere.
+ */
+
+interface Props {
+  control: "mode" | "fontsize" | "toc" | "width" | "focus" | "theme";
+}
+
+const { control } = Astro.props;
+
+import { THEMES, type ThemeName } from "../themes/_index";
+
+const themeEntries = Object.entries(THEMES) as [ThemeName, (typeof THEMES)[ThemeName]][];
+---
+
+<div class="dc" data-demo-control={control}>
+
+  {/* ── Mode ───────────────────────────────────────────── */}
+  {control === "mode" && (
+    <div class="dc__row">
+      <button class="dc__pill" data-dc-mode>
+        <span class="dc__pill-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </span>
+        <span class="dc__pill-label" data-dc-mode-label>Light</span>
+        <span class="dc__pill-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+  )}
+
+  {/* ── Font Size ──────────────────────────────────────── */}
+  {control === "fontsize" && (
+    <div class="dc__row dc__fontsize">
+      <span class="dc__font-sm" aria-hidden="true">A</span>
+      <input
+        type="range" min="0" max="4" value="2" step="1"
+        class="dc__slider" data-dc-fontsize
+        aria-label="Font size"
+      />
+      <span class="dc__font-lg" aria-hidden="true">A</span>
+      <span class="dc__size-label" data-dc-fontsize-label>Default</span>
+    </div>
+  )}
+
+  {/* ── TOC ────────────────────────────────────────────── */}
+  {control === "toc" && (
+    <div class="dc__row">
+      <button class="dc__pill dc__pill--active" data-dc-toc>
+        <span class="dc__pill-label">On</span>
+      </button>
+    </div>
+  )}
+
+  {/* ── Width ──────────────────────────────────────────── */}
+  {control === "width" && (
+    <div class="dc__row dc__chips" data-dc-width>
+      <button data-value="narrow" class="dc__chip">Narrow</button>
+      <button data-value="default" class="dc__chip dc__chip--active">Default</button>
+      <button data-value="wide" class="dc__chip">Wide</button>
+    </div>
+  )}
+
+  {/* ── Focus / Zen ────────────────────────────────────── */}
+  {control === "focus" && (
+    <div class="dc__row">
+      <button class="dc__pill" data-dc-zen>
+        <span class="dc__pill-label">Off</span>
+      </button>
+    </div>
+  )}
+
+  {/* ── Theme picker ───────────────────────────────────── */}
+  {control === "theme" && (
+    <div class="dc__row">
+      <select class="dc__select" data-dc-theme aria-label="Theme">
+        {themeEntries.map(([name, meta]) => (
+          <option value={name} title={meta.tagline}>
+            {name.charAt(0).toUpperCase() + name.slice(1)}
+          </option>
+        ))}
+      </select>
+    </div>
+  )}
+</div>
+
+<style>
+  .dc {
+    margin-block: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg-alt);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .dc__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  /* Pill */
+  .dc__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-weight: 500;
+  }
+  .dc__pill:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  .dc__pill--active {
+    background: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+  }
+  .dc__pill-icon { display: flex; align-items: center; }
+  .dc__pill-label { pointer-events: none; }
+
+  /* Chips */
+  .dc__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .dc__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-weight: 500;
+  }
+  .dc__chip:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  .dc__chip--active {
+    background: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+  }
+
+  /* Slider */
+  .dc__font-sm {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 700;
+    user-select: none;
+  }
+  .dc__font-lg {
+    font-size: 1.25rem;
+    color: var(--color-text-muted);
+    font-weight: 700;
+    user-select: none;
+  }
+  .dc__slider {
+    flex: 1;
+    min-width: 120px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .dc__slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .dc__slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .dc__size-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    min-width: 4em;
+  }
+
+  /* Select */
+  .dc__select {
+    min-width: 180px;
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .dc__select:hover,
+  .dc__select:focus {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+</style>
+
+<script>
+  // ── DemoControl client-side logic ─────────────────────
+  // Each demo control reads/writes the same localStorage key as ReaderControls
+  // so all controls stay in sync.
+  (function () {
+    const LS_KEY = "lw-reader";
+    const root = document.documentElement;
+    const FONT_SIZES = ["xs", "sm", "md", "lg", "xl"];
+    const FONT_LABELS = ["XS", "Small", "Default", "Large", "XL"];
+
+    // Guard: skip if already initialized (prevents HMR double-binding)
+    if (document.querySelector("[data-dc-init]")) return;
+    const firstDc = document.querySelector("[data-demo-control]");
+    if (firstDc) firstDc.setAttribute("data-dc-init", "");
+
+    function loadPrefs(): Record<string, string> {
+      try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); }
+      catch { return {}; }
+    }
+    function savePrefs(p: Record<string, string>) {
+      localStorage.setItem(LS_KEY, JSON.stringify(p));
+    }
+
+    // Read theme map
+    let themeMap: Record<string, { fonts_url: string }> = {};
+    let defaultTheme = "";
+    try {
+      const raw = JSON.parse(document.getElementById("lw-theme-map")?.textContent || "{}");
+      themeMap = raw.themes || {};
+      defaultTheme = raw.defaultTheme || "";
+    } catch {}
+
+    // ── Mode demos ─────────────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='mode']").forEach(container => {
+      const btn = container.querySelector("[data-dc-mode]") as HTMLButtonElement;
+      const lbl = container.querySelector("[data-dc-mode-label]") as HTMLElement;
+      if (!btn) return;
+
+      // Initial state
+      const p = loadPrefs();
+      const isDark = p.dark === "true";
+      btn.classList.toggle("dc__pill--active", isDark);
+      if (lbl) lbl.textContent = isDark ? "Dark" : "Light";
+
+      btn.addEventListener("click", () => {
+        const prefs = loadPrefs();
+        prefs.dark = prefs.dark === "true" ? "false" : "true";
+        savePrefs(prefs);
+        const on = prefs.dark === "true";
+        root.setAttribute("data-dark", prefs.dark);
+        btn.classList.toggle("dc__pill--active", on);
+        if (lbl) lbl.textContent = on ? "Dark" : "Light";
+
+        // Sync floating ReaderControls
+        syncRC(prefs);
+      });
+    });
+
+    // ── Font size demos ─────────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='fontsize']").forEach(container => {
+      const slider = container.querySelector("[data-dc-fontsize]") as HTMLInputElement;
+      const label = container.querySelector("[data-dc-fontsize-label]") as HTMLElement;
+      if (!slider) return;
+
+      const p = loadPrefs();
+      const fsIdx = FONT_SIZES.indexOf(p.fontSize || "md");
+      slider.value = String(fsIdx >= 0 ? fsIdx : 2);
+      if (label) label.textContent = FONT_LABELS[fsIdx >= 0 ? fsIdx : 2];
+
+      slider.addEventListener("input", () => {
+        const prefs = loadPrefs();
+        const idx = parseInt(slider.value);
+        prefs.fontSize = FONT_SIZES[idx] || "md";
+        savePrefs(prefs);
+        if (prefs.fontSize === "md") root.removeAttribute("data-font-size");
+        else root.setAttribute("data-font-size", prefs.fontSize);
+        if (label) label.textContent = FONT_LABELS[idx];
+        syncRC(prefs);
+      });
+    });
+
+    // ── TOC demos ──────────────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='toc']").forEach(container => {
+      const btn = container.querySelector("[data-dc-toc]") as HTMLButtonElement;
+      if (!btn) return;
+
+      const p = loadPrefs();
+      const tocOn = p.toc !== "hidden";
+      btn.classList.toggle("dc__pill--active", tocOn);
+      const lbl = btn.querySelector(".dc__pill-label") as HTMLElement;
+      if (lbl) lbl.textContent = tocOn ? "On" : "Off";
+
+      btn.addEventListener("click", () => {
+        const prefs = loadPrefs();
+        prefs.toc = prefs.toc === "hidden" ? "visible" : "hidden";
+        savePrefs(prefs);
+        const on = prefs.toc !== "hidden";
+        if (prefs.toc === "hidden") root.setAttribute("data-toc", "hidden");
+        else root.removeAttribute("data-toc");
+        btn.classList.toggle("dc__pill--active", on);
+        if (lbl) lbl.textContent = on ? "On" : "Off";
+        syncRC(prefs);
+      });
+    });
+
+    // ── Width demos ────────────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='width']").forEach(container => {
+      const chips = container.querySelector("[data-dc-width]") as HTMLElement;
+      if (!chips) return;
+
+      const p = loadPrefs();
+      const w = p.width || "default";
+      chips.querySelectorAll(".dc__chip").forEach(c => {
+        c.classList.toggle("dc__chip--active", (c as HTMLElement).dataset.value === w);
+      });
+
+      chips.addEventListener("click", (e) => {
+        const btn = (e.target as HTMLElement).closest("[data-value]") as HTMLElement;
+        if (!btn) return;
+        const prefs = loadPrefs();
+        prefs.width = btn.dataset.value!;
+        savePrefs(prefs);
+        if (prefs.width === "default") root.removeAttribute("data-width");
+        else root.setAttribute("data-width", prefs.width);
+        chips.querySelectorAll(".dc__chip").forEach(c => {
+          c.classList.toggle("dc__chip--active", (c as HTMLElement).dataset.value === prefs.width);
+        });
+        syncRC(prefs);
+      });
+    });
+
+    // ── Focus / Zen demos ──────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='focus']").forEach(container => {
+      const btn = container.querySelector("[data-dc-zen]") as HTMLButtonElement;
+      if (!btn) return;
+
+      const p = loadPrefs();
+      const on = p.zen === "true";
+      btn.classList.toggle("dc__pill--active", on);
+      const lbl = btn.querySelector(".dc__pill-label") as HTMLElement;
+      if (lbl) lbl.textContent = on ? "On" : "Off";
+
+      btn.addEventListener("click", () => {
+        const prefs = loadPrefs();
+        prefs.zen = prefs.zen === "true" ? "false" : "true";
+        savePrefs(prefs);
+        const active = prefs.zen === "true";
+        if (active) root.setAttribute("data-zen", "");
+        else root.removeAttribute("data-zen");
+        btn.classList.toggle("dc__pill--active", active);
+        if (lbl) lbl.textContent = active ? "On" : "Off";
+        syncRC(prefs);
+      });
+    });
+
+    // ── Theme demos ────────────────────────────────────
+    document.querySelectorAll<HTMLElement>("[data-demo-control='theme']").forEach(container => {
+      const select = container.querySelector("[data-dc-theme]") as HTMLSelectElement;
+      if (!select) return;
+
+      const p = loadPrefs();
+      const current = p.theme || defaultTheme || "";
+      if (current && select.querySelector(`option[value="${current}"]`)) {
+        select.value = current;
+      }
+
+      select.addEventListener("change", () => {
+        const picked = select.value;
+        const themeLink = document.getElementById("lw-theme") as HTMLLinkElement;
+        if (themeLink && picked) themeLink.href = "/themes/" + picked + ".css";
+        const fontsLink = document.getElementById("lw-fonts") as HTMLLinkElement;
+        const meta = themeMap[picked];
+        if (fontsLink && meta?.fonts_url) fontsLink.href = meta.fonts_url;
+        const prefs = loadPrefs();
+        prefs.theme = picked === defaultTheme ? "" : picked;
+        savePrefs(prefs);
+        syncRC(prefs);
+      });
+    });
+
+    // ── Sync floating ReaderControls ───────────────────
+    function syncRC(prefs: Record<string, string>) {
+      // Mode
+      const modeBtn = document.querySelector("[data-rc-mode]") as HTMLButtonElement;
+      const modeLbl = document.querySelector("[data-rc-mode-label]") as HTMLElement;
+      if (modeBtn) modeBtn.classList.toggle("rc__pill--active", prefs.dark === "true");
+      if (modeLbl) modeLbl.textContent = prefs.dark === "true" ? "Dark" : "Light";
+
+      // Font slider
+      const fontSlider = document.querySelector("[data-rc-fontsize]") as HTMLInputElement;
+      if (fontSlider) {
+        const idx = FONT_SIZES.indexOf(prefs.fontSize || "md");
+        fontSlider.value = String(idx >= 0 ? idx : 2);
+      }
+
+      // TOC
+      const tocBtn = document.querySelector("[data-rc-toc]") as HTMLButtonElement;
+      if (tocBtn) {
+        const tocOn = prefs.toc !== "hidden";
+        tocBtn.classList.toggle("rc__pill--active", tocOn);
+        const tocLbl = tocBtn.querySelector(".rc__pill-label");
+        if (tocLbl) tocLbl.textContent = tocOn ? "On" : "Off";
+      }
+
+      // Width
+      document.querySelector("[data-rc-width]")?.querySelectorAll(".rc__chip").forEach(c => {
+        c.classList.toggle("rc__chip--active",
+          (c as HTMLElement).dataset.value === (prefs.width || "default"));
+      });
+
+      // Zen
+      const zenBtn = document.querySelector("[data-rc-zen]") as HTMLButtonElement;
+      if (zenBtn) {
+        const zenOn = prefs.zen === "true";
+        zenBtn.classList.toggle("rc__pill--active", zenOn);
+        const zenLbl = zenBtn.querySelector(".rc__pill-label");
+        if (zenLbl) zenLbl.textContent = zenOn ? "On" : "Off";
+      }
+
+      // Theme select
+      const rcTheme = document.querySelector("[data-rc-theme]") as HTMLSelectElement;
+      if (rcTheme) rcTheme.value = prefs.theme || "";
+    }
+  })();
+</script>
