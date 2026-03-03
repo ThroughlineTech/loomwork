@@ -11,8 +11,8 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
 {toc.length > 0 && (
   <>
-    {/* ── Mobile: collapsible dropdown ──────────────────── */}
-    <div class="toc-mobile">
+    {/* ── Mobile: collapsible dropdown (expanded mode) ──── */}
+    <div class="toc-mobile toc-mobile--full">
       <button
         class="toc-mobile__toggle"
         aria-expanded="false"
@@ -34,8 +34,19 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
       </nav>
     </div>
 
-    {/* ── Desktop: slim sticky sidebar ──────────────────── */}
-    <nav class="toc-desktop" aria-label="Table of contents">
+    {/* ── Mobile: numbered strip (numbered mode) ────────── */}
+    <nav class="toc-mobile toc-mobile--numbered" aria-label="Table of contents (numbered)">
+      <ol class="toc-numbered">
+        {toc.map((heading, i) => (
+          <li>
+            <a href={`#${heading.slug}`} title={heading.text}>{i + 1}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
+    {/* ── Desktop: slim sticky sidebar (expanded mode) ──── */}
+    <nav class="toc-desktop toc-desktop--full" aria-label="Table of contents">
       <p class="toc__title">On this page</p>
       <ul>
         {toc.map((heading) => (
@@ -44,6 +55,18 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
           </li>
         ))}
       </ul>
+    </nav>
+
+    {/* ── Desktop: numbered strip (numbered mode) ───────── */}
+    <nav class="toc-desktop toc-desktop--numbered" aria-label="Table of contents (numbered)">
+      <p class="toc__title">&sect;</p>
+      <ol class="toc-numbered toc-numbered--vertical">
+        {toc.map((heading, i) => (
+          <li>
+            <a href={`#${heading.slug}`} title={heading.text}>{i + 1}</a>
+          </li>
+        ))}
+      </ol>
     </nav>
   </>
 )}
@@ -89,10 +112,48 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
     padding-inline-start: var(--space-md);
   }
 
+  /* ── Numbered strip (shared) ─────────────────────── */
+  .toc-numbered {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 2px;
+  }
+  .toc-numbered a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition);
+    padding: 0;
+  }
+  .toc-numbered a:hover {
+    background: var(--color-accent);
+    color: white;
+    border-color: var(--color-accent);
+  }
+  .toc-numbered--vertical {
+    flex-direction: column;
+  }
+
   /* ── Mobile TOC ─────────────────────────────────────── */
   .toc-mobile {
-    display: block;
     margin-block-end: var(--space-lg);
+  }
+  .toc-mobile--full {
+    display: block;
+  }
+  .toc-mobile--numbered {
+    display: none;
   }
 
   .toc-mobile__toggle {
@@ -136,7 +197,7 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 
   @media (min-width: 960px) {
     .toc-mobile {
-      display: none;
+      display: none !important;
     }
   }
 
@@ -145,10 +206,16 @@ const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
     display: none;
     font-size: var(--text-sm);
   }
+  .toc-desktop--numbered {
+    display: none;
+  }
 
   @media (min-width: 960px) {
-    .toc-desktop {
+    .toc-desktop--full {
       display: block;
+    }
+    .toc-desktop--numbered {
+      display: none;
     }
   }
 </style>

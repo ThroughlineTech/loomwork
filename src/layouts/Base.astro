@@ -89,6 +89,7 @@ const fontsUrl = SITE.fonts_url || themeEntry?.fonts_url || "";
           else if (p.dark === "false") d.setAttribute("data-dark", "false");
           if (p.fontSize && p.fontSize !== "md") d.setAttribute("data-font-size", p.fontSize);
           if (p.toc === "hidden") d.setAttribute("data-toc", "hidden");
+          else if (p.toc === "numbered") d.setAttribute("data-toc", "numbered");
           if (p.width && p.width !== "default") d.setAttribute("data-width", p.width);
           if (p.zen === "true") d.setAttribute("data-zen", "");
           // Swap theme CSS + fonts before paint if user picked a different theme

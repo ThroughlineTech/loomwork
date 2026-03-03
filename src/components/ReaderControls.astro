@@ -74,13 +74,13 @@
       </div>
     </div>
 
-    {/* TOC toggle */}
+    {/* TOC three-state: Expanded / Numbered / Hidden */}
     <div class="rc__group">
       <span class="rc__label">Contents</span>
-      <div class="rc__toggle-row">
-        <button class="rc__pill rc__pill--active" data-rc-toc>
-          <span class="rc__pill-label">On</span>
-        </button>
+      <div class="rc__chips" data-rc-toc>
+        <button data-value="visible" class="rc__chip rc__chip--active" title="Full table of contents">Full</button>
+        <button data-value="numbered" class="rc__chip" title="Numbered section indicators">#</button>
+        <button data-value="hidden" class="rc__chip" title="Hide table of contents">Off</button>
       </div>
     </div>
 
@@ -351,7 +351,7 @@
     const modeBtn = container.querySelector("[data-rc-mode]") as HTMLButtonElement;
     const modeLbl = container.querySelector("[data-rc-mode-label]") as HTMLElement;
     const fontSlider = container.querySelector("[data-rc-fontsize]") as HTMLInputElement;
-    const tocBtn = container.querySelector("[data-rc-toc]") as HTMLButtonElement;
+    // tocChips is initialized later for TOC three-state
     const widthChips = container.querySelector("[data-rc-width]") as HTMLElement;
     const zenBtn = container.querySelector("[data-rc-zen]") as HTMLButtonElement;
     const themeSelect = container.querySelector("[data-rc-theme]") as HTMLSelectElement;
@@ -410,8 +410,9 @@
       if (fs === "md") root.removeAttribute("data-font-size");
       else root.setAttribute("data-font-size", fs);
 
-      // TOC
+      // TOC (three-state: visible / numbered / hidden)
       if (prefs.toc === "hidden") root.setAttribute("data-toc", "hidden");
+      else if (prefs.toc === "numbered") root.setAttribute("data-toc", "numbered");
       else root.removeAttribute("data-toc");
 
       // Width
@@ -438,11 +439,12 @@
       const fsIdx = FONT_SIZES.indexOf(prefs.fontSize || "md");
       if (fontSlider) fontSlider.value = String(fsIdx >= 0 ? fsIdx : 2);
 
-      // TOC pill
-      const tocOn = prefs.toc !== "hidden";
-      tocBtn?.classList.toggle("rc__pill--active", tocOn);
-      const tocLbl = tocBtn?.querySelector(".rc__pill-label");
-      if (tocLbl) tocLbl.textContent = tocOn ? "On" : "Off";
+      // TOC chips (three-state)
+      const tocContainer = container.querySelector("[data-rc-toc]") as HTMLElement;
+      tocContainer?.querySelectorAll(".rc__chip").forEach((btn) => {
+        const val = (btn as HTMLElement).dataset.value;
+        btn.classList.toggle("rc__chip--active", val === (prefs.toc || "visible"));
+      });
 
       // Width chips
       widthChips?.querySelectorAll(".rc__chip").forEach((btn) => {
@@ -500,9 +502,12 @@
       applyAll(prefs);
     });
 
-    // ── TOC toggle ────────────────────────────────────
-    tocBtn?.addEventListener("click", () => {
-      prefs.toc = prefs.toc === "hidden" ? "visible" : "hidden";
+    // ── TOC three-state picker ─────────────────────────
+    const tocChips = container.querySelector("[data-rc-toc]") as HTMLElement;
+    tocChips?.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest("[data-value]") as HTMLElement;
+      if (!btn) return;
+      prefs.toc = btn.dataset.value!;
       savePrefs(prefs);
       applyAll(prefs);
     });

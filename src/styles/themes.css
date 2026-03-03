@@ -25,21 +25,51 @@
 [data-font-size="xl"] { --text-base: 1.5rem;    --text-sm: 1.1875rem; }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TOC TOGGLE
+   TOC THREE-STATE TOGGLE
    
-   When [data-toc="hidden"] is set on <html>, hide the TOC.
+   data-toc values on <html>:
+     (unset)     = expanded  — full TOC with heading text
+     "numbered"  = numbered  — compact numbered strip
+     "hidden"    = hidden    — TOC completely removed
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── Hidden state ──────────────────────────────────────── */
 [data-toc="hidden"] .toc-desktop,
 [data-toc="hidden"] .toc-mobile {
   display: none !important;
 }
-
-/* When TOC is hidden, collapse guide grid to single column so content fills width */
 [data-toc="hidden"] .page__grid {
   grid-template-columns: 1fr !important;
 }
 [data-toc="hidden"] .page__sidebar {
   display: none !important;
+}
+
+/* ── Numbered state ────────────────────────────────────── */
+/* Hide the full TOC variants */
+[data-toc="numbered"] .toc-desktop--full,
+[data-toc="numbered"] .toc-mobile--full {
+  display: none !important;
+}
+/* Show the numbered variants */
+[data-toc="numbered"] .toc-mobile--numbered {
+  display: block !important;
+}
+@media (min-width: 960px) {
+  [data-toc="numbered"] .toc-mobile--numbered {
+    display: none !important;
+  }
+  [data-toc="numbered"] .toc-desktop--numbered {
+    display: block !important;
+  }
+}
+/* Narrow the sidebar for the compact numbered strip */
+[data-toc="numbered"] .page__grid {
+  grid-template-columns: auto 1fr !important;
+}
+[data-toc="numbered"] .page__sidebar {
+  min-width: auto;
+  width: auto;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
