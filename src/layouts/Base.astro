@@ -57,16 +57,13 @@ const fontsUrl = SITE.fonts_url || themeEntry?.fonts_url || "";
     <meta property="og:url" content={canonicalURL} />
     {og_image && <meta property="og:image" content={new URL(og_image, SITE.url)} />}
 
-    <!-- Fonts: resolved by inline script below to prevent FOUC -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link id="lw-fonts" rel="stylesheet" />
+    <link id="lw-fonts" href={fontsUrl || undefined} rel="stylesheet" />
 
-    <!-- Theme CSS (resolved by inline script below to prevent FOUC) -->
-    <link id="lw-theme" rel="stylesheet" />
-    <!-- Defaults for the inline script to use as fallback -->
-    <meta id="lw-default-theme" content={themeName || ""} />
-    <meta id="lw-default-fonts" content={fontsUrl || ""} />
+    <!-- Theme CSS (render-blocking — default theme baked in, swapped by script if needed) -->
+    <link id="lw-theme" rel="stylesheet" href={themeEntry ? `/themes/${themeName}.css` : undefined} />
 
     <!-- Theme registry for client-side picker -->
     {showReaderControls && (
@@ -95,26 +92,27 @@ const fontsUrl = SITE.fonts_url || themeEntry?.fonts_url || "";
           else if (p.toc === "numbered") d.setAttribute("data-toc", "numbered");
           if (p.width && p.width !== "default") d.setAttribute("data-width", p.width);
           if (p.zen === "true") d.setAttribute("data-zen", "");
-          // Resolve theme: user preference wins, then site default
-          var defaultTheme = (document.getElementById("lw-default-theme") || {}).content || "";
-          var theme = p.theme || defaultTheme;
-          if (theme) {
-            var tl = document.getElementById("lw-theme");
-            if (tl) tl.setAttribute("href", "/themes/" + theme + ".css");
-          }
-          // Resolve fonts: user's theme fonts, else site default fonts
-          var defaultFonts = (document.getElementById("lw-default-fonts") || {}).content || "";
-          var fontsUrl = defaultFonts;
+          // Swap theme + fonts if user picked a non-default theme.
+          // The default theme CSS is already baked into the <link> and is
+          // render-blocking, so default-theme users (including dark mode) get
+          // zero flash.  For non-default themes we hide the page, swap the
+          // href, and reveal once the new stylesheet has loaded.
           if (p.theme) {
+            var tl = document.getElementById("lw-theme");
+            if (tl) {
+              d.style.visibility = "hidden";
+              tl.onload = tl.onerror = function() { d.style.visibility = ""; };
+              tl.setAttribute("href", "/themes/" + p.theme + ".css");
+            }
+            // Swap fonts for the chosen theme
             try {
               var m = JSON.parse(document.getElementById("lw-theme-map").textContent);
               var t = m && m.themes && m.themes[p.theme];
-              if (t && t.fonts_url) fontsUrl = t.fonts_url;
+              if (t && t.fonts_url) {
+                var fl = document.getElementById("lw-fonts");
+                if (fl) fl.setAttribute("href", t.fonts_url);
+              }
             } catch(e2) {}
-          }
-          if (fontsUrl) {
-            var fl = document.getElementById("lw-fonts");
-            if (fl) fl.setAttribute("href", fontsUrl);
           }
         } catch(e) {}
       })();
