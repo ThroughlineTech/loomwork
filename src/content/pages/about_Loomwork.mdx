@@ -1,42 +1,56 @@
 ---
 title: "About Loomwork"
-description: "A content-first Astro starter for crafting sites by hand."
+description: "A content-first Astro starter for crafting sites by hand — 10 themes, reader controls, and zero-flash loading."
 section: "about"
 nav_order: 10
 template: "default"
 date_created: "2026-02-12"
+date_updated: "2026-03-04"
 ---
 
 ## What Is Loomwork?
 
-Loomwork is a reusable site starter built on Astro, MDX, and Content Collections. It's designed for people who want to write content in Markdown, push to GitHub, and have a site live in 30 seconds, no CMS, no database, no fuss.
+Loomwork is an open-source site starter built on Astro, MDX, and Content Collections. Write content in Markdown, push to GitHub, and have a site live on Cloudflare Pages in 30 seconds — no CMS, no database, no fuss.
 
-The name comes from the craft of weaving,  taking raw threads (your content, your components, your config) and producing something whole.
+The name comes from the craft of weaving: taking raw threads (your content, your components, your config) and producing something whole.
+
+## What You Get
+
+**10 built-in themes** — Manuscript, Brutalist, Atelier, Terminal, Gazette, Alpine, Campfire, Moonrise, Field Notes, and Neon. Each ships with light and dark mode, custom fonts, and a complete color palette. One line in your config to switch.
+
+**Reader controls** — A floating panel that lets your visitors choose their preferred theme, toggle dark mode, adjust font size, change content width, and enter focus mode. Preferences persist across visits.
+
+**5 page templates** — Default, landing, guide, tool, and longform. Pick the right layout for every kind of content, from a simple about page to a deep-dive essay with a persistent sidebar.
+
+**Zero-flash loading** — Themes load before the browser paints. No flicker, no wrong colors, no layout shift. The correct stylesheet is the only one that ever loads.
+
+**Mobile editor** — A built-in PWA at `/mobile`. Draft and publish content from your phone using GitHub's API — no app store required.
+
+**Fork and go** — Clone the repo, edit `site.config.ts`, push. Your site is live.
 
 ## Who It's For
 
 Loomwork is for anyone who wants a content-heavy site without the overhead of a full CMS. If you're comfortable editing Markdown files and running `git push`, this is your stack.
 
-Good fits include documentation sites, personal blogs, educational resources, project hubs, and small business sites where the content matters more than the chrome.
+Good fits: documentation sites, personal blogs, educational resources, project hubs, portfolios, and small business sites where the content matters more than the chrome.
 
 ## How It Works
 
-Every page on this site is an MDX file in a folder. The file path becomes the URL. A single config file controls the site name, navigation, footer, and branding. Change that file and the CSS variables, and you have a completely different site.
+Every page is an MDX file in a folder. The file path becomes the URL. A single config file (`site.config.ts`) controls the site name, navigation, theme, and branding. Change that file and the CSS variables in `site.css`, and you have a completely different site.
 
-The stack is intentionally simple: Astro builds static HTML at deploy time, Cloudflare Pages serves it globally for free, and GitHub handles version control. No server to maintain, no database to back up, no monthly hosting bill.
+The framework cleanly separates your files from its files. Your config, content, header, footer, homepage, and styles are yours — framework updates merge in without conflicts via `git merge loomwork/main`.
 
-## The Fork-and-Rebrand Workflow
+The stack is intentionally simple: Astro builds static HTML at deploy time, Cloudflare Pages serves it globally, and GitHub handles version control. No server to maintain, no database to back up, no monthly hosting bill.
 
-Loomwork is meant to be forked. Clone the repo, change `src/site.config.ts` and the CSS variables in `src/styles/site.css`, replace the content, push, and you're live.
+## What's New in 2.1
+
+- Custom SVG icons and a loom brand mark across the site
+- `--header-height` CSS variable — sites with custom headers override one value
+- Header and Footer reclassified as site files — upgrades won't overwrite them
+- CSS Architecture documentation for theme authors and site customizers
+- Mobile layout fixes — content pages no longer clip on small screens
+- Progress page for tracking what's changed
 
 ## Built By
 
 Loomwork is a [Throughline Technical Services](https://www.throughlinetech.net) project.
-
-## Test Update
-
-Mobile test update
-
-## Upload image
-
-![image](/images/1771364152056-image.jpg)
