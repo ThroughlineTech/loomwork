@@ -74,7 +74,10 @@ src/
 ├── components/
 │   ├── *.astro            ← FRAMEWORK: shared components
 │   └── mobile/            ← FRAMEWORK: mobile editor components
-├── layouts/               ← FRAMEWORK: page layouts
+├── layouts/
+│   ├── Base.astro         ← FRAMEWORK: HTML shell
+│   ├── Content.astro      ← FRAMEWORK: standard page layout
+│   └── Longform.astro     ← FRAMEWORK: split-panel deep dives
 └── pages/
     ├── index.astro        ← SITE FILE: your homepage
     ├── [...slug].astro    ← FRAMEWORK: renders content pages
@@ -92,14 +95,18 @@ This matters if you want to pull framework updates from the loomwork repo.
 |------|---------|
 | `src/layouts/Base.astro` | HTML shell, meta tags, font loading |
 | `src/layouts/Content.astro` | Content page chrome, template variants |
-| `src/components/*.astro` | Callout, YouTube, Header, Footer, TOC |
+| `src/layouts/Longform.astro` | Split-panel deep dive layout |
+| `src/components/*.astro` | Callout, YouTube, Header, Footer, TOC, etc. |
 | `src/components/mobile/` | Mobile editor React components |
 | `src/styles/global.css` | Reset, base typography, utilities |
 | `src/content.config.ts` | Content collection schemas |
 | `src/pages/[...slug].astro` | Dynamic route for content pages |
 | `src/pages/404.astro` | Not found page |
 | `src/pages/mobile/` | Mobile editor PWA page (served at `/mobile`) |
+| `public/_headers` | Security headers (Cloudflare Pages) |
+| `public/_redirects` | URL redirects |
 | `public/.assetsignore` | Cloudflare deploy fix |
+| `public/mobile/` | PWA manifest and service worker |
 
 ### Site files - yours to customize
 
@@ -128,9 +135,13 @@ When loomwork gets updates:
 ```bash
 git fetch loomwork
 git merge loomwork/main
+npm install
+npm run build
 ```
 
 Framework files merge cleanly because you haven't edited them. Site files won't conflict because loomwork only has placeholder versions.
+
+See `docs/UPGRADE.md` in the loomwork repo for the full guide with conflict resolution, CSS variable migration, rollback instructions, and dependency handling.
 
 ## Mobile Editor
 
@@ -176,7 +187,7 @@ title: "Page Title"
 description: "SEO description, max 160 chars."
 section: "guides"
 nav_order: 10
-template: "guide"     # default | landing | guide | tool
+template: "guide"     # default | landing | guide | tool | longform
 draft: false
 ---
 ```
@@ -201,6 +212,7 @@ Available: `Callout` (info/warning/tip/danger), `YouTube` (video embeds).
 - **`landing`** - Wide container, no sidebar
 - **`guide`** - Sticky table of contents sidebar on desktop
 - **`tool`** - Minimal chrome for interactive React components
+- **`longform`** - Split-panel: fixed sidebar index + scrollable content (deep dives, essays)
 
 ## Deploy to Cloudflare
 
