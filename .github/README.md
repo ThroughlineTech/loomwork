@@ -23,14 +23,11 @@ npm run dev        # → http://localhost:4321
 Delete these before building your site — they're loomwork repo files, not part of the framework:
 
 ```bash
-rm MOBILE_README.md   # loomwork mobile editor docs
-rm MOBILE_PROJECT.md  # loomwork mobile project spec
-rm Notes.md           # author's dev notes
-rm PROJECT.md         # loomwork project spec
-rm UPGRADE.md         # loomwork upgrade guide
-rm UPGRADE-PROMPT.md  # loomwork upgrade prompt template
-rm VERIFICATION_AGENT_PROMPT.md  # loomwork CI verification prompt
+rm -rf docs/              # loomwork project docs, prompts, audits
 ```
+
+Keep `UPGRADE.md` if you want the upgrade guide handy for future framework
+updates. Otherwise, you can always find it at the loomwork repo.
 
 Then replace the loomwork placeholder content:
 
@@ -38,7 +35,12 @@ Then replace the loomwork placeholder content:
 rm src/content/pages/about_Loomwork.mdx
 rm src/content/pages/guide.mdx
 rm src/content/pages/mobile-app.mdx
-rm public/images/1771364152056-image.jpg
+rm src/content/pages/building.mdx
+rm src/content/pages/page-types.mdx
+rm src/content/pages/reader-controls.mdx
+rm src/content/pages/theming.mdx
+rm -rf src/content/pages/deep-dives/
+rm -f public/images/1771364152056-image.jpg
 ```
 
 Then create your own project README:

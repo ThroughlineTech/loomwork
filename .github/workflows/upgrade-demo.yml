@@ -27,7 +27,7 @@ jobs:
 
       - name: Fetch upgrade prompt from framework repo
         run: |
-          curl -sL https://raw.githubusercontent.com/danrichardson/loomwork/refs/heads/main/UPGRADE-PROMPT.md \
+          curl -sL https://raw.githubusercontent.com/danrichardson/loomwork/refs/heads/main/docs/UPGRADE-PROMPT.md \
             -o /tmp/UPGRADE-PROMPT.md
 
       - name: Run Claude Code

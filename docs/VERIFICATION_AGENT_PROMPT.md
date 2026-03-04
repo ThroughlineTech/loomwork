@@ -26,12 +26,12 @@ about.mdx — About Coastal Kitchen (who you are, what you cover)
 recipes.mdx — Featured recipes (use the guide template, include 4–6 seafood recipes with ingredients and steps, use Callout components for tips)
 techniques.mdx — Cooking techniques (use the guide template, cover things like grilling fish, shucking oysters, making stock, etc.)
 pantry.mdx — Pantry essentials (use the guide template, cover key ingredients, spices, sauces for coastal cooking)
-Each page needs proper frontmatter: title, description (max 160 chars), section, nav_order, template, and date_created. Use Callout components (import Callout from '../../components/Callout.astro';) with various types (tip, warning, info, danger).
+Each page needs proper frontmatter: title, description (max 160 chars), section, nav_order, template, and date_created. Available templates: `default`, `landing`, `guide`, `tool`, `longform`. Use Callout components (import Callout from '../../components/Callout.astro';) with various types (tip, warning, info, danger).
 
 4. Delete ALL loomwork-specific placeholder content. After creating your pages:
 
 Delete any content pages that came with the repo (anything referencing Loomwork, deploy guides, mobile app pages, "about Loomwork", etc.)
-Delete any loomwork-specific documentation files in the repo root (Notes.md, PROJECT.md, MOBILE_README.md, or similar)
+Delete the docs/ directory (loomwork project docs, prompts, audits)
 Delete any orphaned images in public/images/ that were referenced by deleted pages
 Replace README.md with a site-specific readme for Coastal Kitchen
 Note: src/pages/mobile/ and src/components/mobile/ are intentional framework files — a PWA mobile editor for editing content via GitHub. Do not delete them. Verify that /mobile/index.html appears in the build output.
@@ -54,14 +54,18 @@ Allowed references: Framework-marker comments like // won't conflict with framew
 File	Purpose
 src/layouts/Base.astro	HTML shell, meta tags, font loading
 src/layouts/Content.astro	Content page chrome, template variants
-src/components/*.astro	Callout, YouTube, Header, Footer, TOC
+src/layouts/Longform.astro	Split-panel deep dive layout
+src/components/*.astro	Callout, YouTube, Header, Footer, TOC, etc.
 src/components/mobile/	PWA mobile editor components
 src/styles/global.css	Reset, base typography, utilities
 src/content.config.ts	Content collection schemas
 src/pages/[...slug].astro	Dynamic route for content pages
 src/pages/404.astro	Not found page
 src/pages/mobile/	PWA mobile editor page
+public/_headers	Security headers (Cloudflare Pages)
+public/_redirects	URL redirects
 public/.assetsignore	Cloudflare deploy fix
+public/mobile/	PWA manifest and service worker
 But site files (site.config.ts, site.css, index.astro, content pages, README.md, package.json, astro.config.mjs, wrangler.toml) should have zero loomwork-specific content.
 
 7. Start the dev server (npm run dev) and confirm it runs without errors at http://localhost:4321.

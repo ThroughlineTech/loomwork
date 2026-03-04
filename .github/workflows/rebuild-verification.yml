@@ -42,7 +42,7 @@ jobs:
 
       - name: Fetch verification prompt from framework repo
         run: |
-          curl -sL https://raw.githubusercontent.com/danrichardson/loomwork/refs/heads/main/VERIFICATION_AGENT_PROMPT.md \
+          curl -sL https://raw.githubusercontent.com/danrichardson/loomwork/refs/heads/main/docs/VERIFICATION_AGENT_PROMPT.md \
             -o /tmp/VERIFICATION_AGENT_PROMPT.md
 
       - name: Setup Node
