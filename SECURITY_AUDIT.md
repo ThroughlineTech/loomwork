@@ -1,8 +1,9 @@
 # Loomwork Security Audit
 
 **Initial audit:** March 3, 2026  
-**Re-audit #1:** March 3, 2026  
-**Re-audit #2:** March 3, 2026 — No code changes since prior run; re-verified deployed site  
+**Re-audit #1:** March 3, 2026 — Phase 1 fixes verified  
+**Re-audit #2:** March 3, 2026 — No new code changes; re-verified deployed site  
+**Re-audit #3:** March 3, 2026 — Phase 2 security hardening (`security: phase 2`) verified  
 **Auditor:** Independent security review  
 **Scope:** Full codebase (`security` branch) + live site pen-test  
 **Tested URL:** `https://security.loomwork.pages.dev`  
@@ -14,26 +15,25 @@
 
 Loomwork is a static Astro site with a client-side React mobile editor that talks directly to the GitHub API using a personal access token (PAT). The overall attack surface is small — there is no server-side runtime processing user input in production.
 
-The initial audit on March 3 identified 18 findings (1 Critical, 3 High, 5 Medium, 5 Low, 4 Info). Significant remediation work has been completed on the `security` branch. **7 of 18 findings are now fully resolved**, 1 is partially fixed, and 10 remain open (mostly medium/low severity). No new vulnerabilities were introduced by the fixes.
+The initial audit on March 3 identified 18 findings (1 Critical, 3 High, 5 Medium, 5 Low, 4 Info). Two phases of remediation have been completed on the `security` branch. **Phase 1** resolved the critical XSS, input validation, security headers, and several lower items. **Phase 2** addressed PAT encryption, service worker versioning, `execSync` removal, feature-branch commits, the deprecated `unescape()` pattern, and replaced the custom YAML parser with a proper library. The mobile editor has also been temporarily disabled during hardening.
 
-**Re-audit #2 (March 3):** No code changes since the prior run. All fixes remain in place. Live pen-test re-confirmed all security headers are served correctly. `npm audit` still clean, all dependencies current. No regression or new findings.
+**15 of 18 findings are now fully resolved.** No Critical or High issues remain. The 3 remaining items are Low severity or informational.
 
 ### Remediation Scorecard
 
 | Status | Count | Details |
 |--------|-------|---------|
-| ✅ Fixed | 7 | #1 (Critical XSS), #3, #4 (injection), #5 (headers), #8 (YouTube), #14 (noopener), #16 (generator) |
-| ⚠️ Partial | 1 | #10 (deprecated `unescape` — fixed in github.ts, still in MobileApp.tsx) |
-| 🔴 Open | 10 | #2, #6, #7, #9, #10 (partial), #11, #12, #13, #15, #17, #18 |
+| ✅ Fixed | 15 | #1 (XSS), #2 (PAT encryption), #3, #4 (injection), #5 (headers), #6 (SW), #7 (execSync), #8 (YouTube), #9 (branch commits), #10 (unescape), #12 (YAML), #13 (CSRF mitigated), #14 (noopener), #16 (generator), #18 (deps clean) |
+| 🔴 Open | 3 | #11 (rate limiting — Low), #15 (gitignore — Info), #17 (no leakage — Info) |
 
 ### Current Severity Breakdown (open items only)
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High     | 1 |
-| Medium   | 4 |
-| Low      | 4 |
+| High     | 0 |
+| Medium   | 0 |
+| Low      | 1 |
 | Info     | 2 |
 
 ---
@@ -42,74 +42,61 @@ The initial audit on March 3 identified 18 findings (1 Critical, 3 High, 5 Mediu
 
 ### 1. ✅ FIXED — Stored XSS via `dangerouslySetInnerHTML` in Mobile Preview
 
-**File:** `src/components/mobile/MobileApp.tsx` (line ~690)  
+**File:** `src/components/mobile/MobileApp.tsx` (line ~719)  
 **Original risk:** Unsanitized `renderMarkdown()` output passed to `dangerouslySetInnerHTML`
 
-**Fix applied:** DOMPurify 3.3.1 added as a dependency. Output is now sanitized:
+**Fix applied (Phase 1):** DOMPurify 3.3.1 added as a dependency. Output is now sanitized:
 ```tsx
 import DOMPurify from "dompurify";
 // ...
 __html: DOMPurify.sanitize(renderMarkdown(body)),
 ```
 
-**Verification:** `package.json` includes `dompurify: ^3.3.1` and `@types/dompurify: ^3.0.5`. The sanitize call wraps every render path. The original PoC (`<img src=x onerror="...">`) would now be stripped by DOMPurify.
+**Verification:** `package.json` includes `dompurify: ^3.3.1` and `@types/dompurify: ^3.0.5`. The sanitize call wraps every render path.
 
 ---
 
 ## High
 
-### 2. 🔴 OPEN — GitHub PAT Stored in IndexedDB Without Encryption
+### 2. ✅ FIXED — GitHub PAT Encrypted at Rest with AES-GCM
 
 **File:** `src/components/mobile/storage.ts`
 
-The GitHub personal access token (a credential with repo read/write access) is stored in plaintext in IndexedDB under key `"credentials"`. Any XSS vulnerability or malicious browser extension can read it.
+**Original risk:** PAT stored in plaintext in IndexedDB.
 
-IndexedDB has no built-in encryption. On shared or compromised devices, the token is trivially extractable via DevTools or a page-context script.
+**Fix applied (Phase 2):** Full encryption implementation using Web Crypto API:
+- PBKDF2 key derivation (100,000 iterations, SHA-256) from a user-provided passphrase
+- AES-GCM (256-bit) encryption of the credential JSON
+- Random 16-byte salt per save, random 12-byte IV per encryption
+- Salt and encrypted blob stored as separate IndexedDB keys (`credentials_salt`, `credentials_enc`)
+- Legacy unencrypted credentials removed on save
+- Login form now requires an encryption passphrase field
+- Login UI updated to recommend fine-grained PATs scoped to `Contents: Read and write`
 
-**Impact:** Full repo takeover — push arbitrary code, delete branches, exfiltrate private repos.
-
-**Mitigating factor:** With Critical #1 now fixed (DOMPurify), the primary XSS vector for stealing the PAT is closed. The risk is reduced but not eliminated — browser extensions and physical device access remain vectors.
-
-**Fix:**
-- At minimum, encrypt the token with the Web Crypto API using a key derived from a user-provided passphrase (PBKDF2 + AES-GCM)
-- Better: use a fine-grained PAT scoped to only `contents:write` on the specific repo, and document this clearly for users
-- Best: implement an OAuth flow with a backend proxy so the token never touches the browser
+**Verification:** Confirmed `deriveKey()`, `encryptString()`, `decryptString()` functions in storage.ts. `saveCredentials()` accepts passphrase, generates salt, encrypts, and removes legacy plaintext. `getCredentials()` handles both encrypted (with passphrase) and legacy (migration) paths. MobileApp.tsx login handler passes passphrase through.
 
 ### 3. ✅ FIXED — `document.write()` with Unsanitized localStorage Values
 
 **File:** `src/layouts/Base.astro` (lines ~121-126)
 
-**Fix applied:** Theme names validated against `/^[a-z]+$/` regex. Font URLs validated against `https://fonts.googleapis.com/` origin check:
-```js
-if (theme && /^[a-z]+$/.test(theme)) {
-  document.write('<link id="lw-theme" rel="stylesheet" href="/themes/' + theme + '.css">');
-}
-if (fonts && fonts.indexOf('https://fonts.googleapis.com/') === 0) {
-  document.write('<link id="lw-fonts" rel="stylesheet" href="' + fonts + '">');
-}
-```
-
-The original exploit (injecting `"><script>...` via localStorage) is no longer possible.
+**Fix applied (Phase 1):** Theme names validated against `/^[a-z]+$/` regex. Font URLs validated against `https://fonts.googleapis.com/` origin check.
 
 ### 4. ✅ FIXED — Theme Picker CSS/Font Loading Uses Unsanitized Strings
 
 **Files:** `ReaderControls.astro`, `ThemePicker.astro`, `DemoControl.astro`
 
-**Fix applied:** All three components now validate theme names with `/^[a-z]+$/` and font URLs with `indexOf("https://fonts.googleapis.com/") === 0` before setting `.href`.
+**Fix applied (Phase 1):** All three components validate theme names and font URLs before setting `.href`.
 
 ---
 
 ## Medium
 
-### 5. ✅ FIXED — Security Headers Now Deployed
+### 5. ✅ FIXED — Security Headers Deployed and Verified
 
-**File:** `public/_headers` (new)
-
-**Fix applied:** `_headers` file added with security headers for Cloudflare Pages.
+**File:** `public/_headers`
 
 **Live verification (pen-test of `https://security.loomwork.pages.dev`):**
 ```
-HTTP/1.1 200 OK
 Strict-Transport-Security: max-age=31536000; includeSubDomains  ✅
 permissions-policy: camera=(), microphone=(), geolocation=()    ✅
 referrer-policy: strict-origin-when-cross-origin                ✅
@@ -122,125 +109,133 @@ x-frame-options: DENY                                           ✅
 content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.github.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com  ✅
 ```
 
-**Note:** The main site (`/*`) does not have a CSP due to `document.write()` and inline scripts. This is expected — adding a main-site CSP would require migrating to nonces or `strict-dynamic`, which is a larger refactor. The `/mobile/` path, which handles the PAT, is the priority and is now covered.
+**Note:** Cloudflare Pages serves `Access-Control-Allow-Origin: *` by default on `*.pages.dev` domains. For a static site with no authenticated endpoints this is acceptable. This is a Cloudflare platform behavior, not configurable via `_headers`.
 
-**Note:** Cloudflare Pages serves `Access-Control-Allow-Origin: *` by default on `*.pages.dev` domains. For a static site with no authenticated endpoints this is acceptable, but be aware that any resource on the site can be fetched cross-origin. This is a Cloudflare platform behavior, not configurable via `_headers`.
-
-### 6. 🔴 OPEN — Service Worker Serves Stale Content with No Update Mechanism
+### 6. ✅ FIXED — Service Worker Now Uses Versioned Cache + Network-First
 
 **File:** `public/mobile/sw.js`
 
+**Original risk:** Hardcoded `v1` cache name with cache-first strategy — PWA users would never get security updates.
+
+**Fix applied (Phase 2):**
 ```js
-const CACHE_NAME = "loomwork-mobile-v1";
+const CACHE_VERSION = "2026-03-03T00";  // bump with each deploy
+const CACHE_NAME = `loomwork-mobile-${CACHE_VERSION}`;
 ```
+- Cache name now includes a version timestamp to bump per deploy
+- Strategy changed from cache-first (`cached || fetched`) to **network-first** with cache fallback (`.catch(() => caches.match(event.request))`)
+- Old caches are purged on activate
 
-The cache name is still hardcoded to `v1`. When you deploy updates, PWA users may continue getting the cached version because:
-1. `skipWaiting()` activates immediately but only clears *other* caches
-2. The fetch handler returns cached content first (`cached || fetched`) — stale-while-revalidate
-3. There's no `updatefound` listener or user prompt to reload
+**Verification:** Confirmed network-first fetch handler (`fetch(event.request).then(...).catch(() => caches.match(...))`) and versioned cache name in sw.js.
 
-**Security implications:** If a security fix is deployed, PWA users may never receive it.
+### 7. ✅ FIXED — `execSync` Replaced with `import.meta.env.BUILD_DATE`
 
-**Fix:**
-- Bump `CACHE_NAME` with each deploy (e.g., include a build hash or timestamp)
-- Use a `network-first` strategy instead of `cache-first` for navigation requests
-- Add a version check on the client that prompts users to reload when a new SW is detected
+**File:** `src/components/Footer.astro`
 
-### 7. 🔴 OPEN — `execSync` in Footer.astro Runs Git Command at Build Time
+**Original risk:** `execSync("git log -1 --format=%cI")` at build time — shell command execution in a fork-able codebase.
 
-**File:** `src/components/Footer.astro` (lines 6-7)
-
+**Fix applied (Phase 2):** Footer now reads `import.meta.env.BUILD_DATE` instead of shelling out:
 ```ts
-const { execSync } = await import("child_process");
-const raw = execSync("git log -1 --format=%cI", { encoding: "utf-8" }).trim();
+const buildDate = import.meta.env.BUILD_DATE || "";
+```
+The build date is injected via Vite's `define` in `astro.config.mjs`:
+```js
+vite: {
+  define: {
+    "import.meta.env.BUILD_DATE": JSON.stringify(new Date().toISOString()),
+  },
+}
 ```
 
-While this only runs at build time (not in production), it:
-- Uses `execSync` which can throw and crash the build if git is not available
-- In a CI/CD environment, if the git history is shallow-cloned or missing, this fails silently (caught by try/catch, which is good)
-- In a fork scenario where build runs in an untrusted environment, any build-time file that calls `execSync` is a code execution vector
+No more `execSync`, no more `child_process` import. Build works even without git.
 
-**Impact:** Low in isolation (build-time only, try/catch wrapped). But forks should be aware this runs shell commands during build.
-
-**Fix:** Consider using `import.meta.env` or a Vite plugin for build metadata instead of shelling out. Or document this behavior for fork authors.
-
-### 8. ✅ FIXED — YouTube Component Now Validates Video ID
+### 8. ✅ FIXED — YouTube Component Validates Video ID
 
 **File:** `src/components/YouTube.astro`
 
-**Fix applied:** Video ID validated with regex before rendering, with fallback:
-```astro
-const id = /^[a-zA-Z0-9_-]{11}$/.test(rawId) ? rawId : "";
-// ...
-{id ? ( <div class="youtube-embed">...</div> ) : <p><em>Invalid video ID.</em></p>}
-```
+**Fix applied (Phase 1):** Regex validation `/^[a-zA-Z0-9_-]{11}$/` with fallback to "Invalid video ID" message.
 
-### 9. 🔴 OPEN — Mobile App Commits Directly to `main` Branch
+### 9. ✅ FIXED — Mobile App Now Commits to Feature Branches
 
-**File:** `src/components/mobile/github.ts` — `commitFilesBatch()` uses `branch: "main"` hardcoded, and `putFile()` commits directly to the default branch.
+**File:** `src/components/mobile/MobileApp.tsx`, `src/components/mobile/github.ts`
 
-Any authenticated user can push directly to `main`, triggering immediate Cloudflare deployments. There is no review step, no branch protection enforcement, and no conflict resolution.
+**Original risk:** All commits pushed directly to `main`, triggering immediate production deploys.
 
-**Fix:**
-- Document that GitHub branch protection rules should be enabled on `main`
-- Consider having the mobile editor create commits on a branch and open a PR instead
-- At minimum, add a confirmation step that shows the diff before committing
+**Fix applied (Phase 2):**
+- New `getBranchSha()` and `createBranch()` functions added to github.ts
+- Mobile editor now creates a `mobile/{timestamp}` feature branch from `main` before committing
+- Both single-file and batch commits go to the feature branch
+- Commit dialog updated: "This will create a new branch from main and commit your changes there. Open a pull request on GitHub to merge."
+- Success message: "Committed to branch 'mobile/{timestamp}'. Open a PR to merge to main."
+
+**Verification:** Confirmed `createBranch()` in github.ts creates `refs/heads/{branchName}` from main's SHA. MobileApp.tsx `handleCommit()` calls `createBranch()` before `commitFilesBatch()` with the feature branch name.
 
 ---
 
 ## Low
 
-### 10. ⚠️ PARTIALLY FIXED — Deprecated `unescape()` Pattern
+### 10. ✅ FIXED — Deprecated `unescape()` Fully Replaced
 
-**Fixed in:** `src/components/mobile/github.ts` — replaced with `utf8ToBase64()` using `TextEncoder`:
+**Files:** `src/components/mobile/github.ts`, `src/components/mobile/MobileApp.tsx`
+
+**Fix applied:**
+- **github.ts (Phase 1):** `utf8ToBase64()` using `TextEncoder` replaces `btoa(unescape(encodeURIComponent(...)))`
+- **MobileApp.tsx (Phase 2):** `toBase64Utf8()` rewritten with the same `TextEncoder` pattern:
 ```ts
-function utf8ToBase64(str: string): string {
-  const bytes = new TextEncoder().encode(str);
+function toBase64Utf8(content: string): string {
+  const bytes = new TextEncoder().encode(content);
   const binString = Array.from(bytes, (b) => String.fromCodePoint(b)).join("");
   return btoa(binString);
 }
 ```
 
-**Still present in:** `src/components/mobile/MobileApp.tsx` (line ~751):
-```ts
-function toBase64Utf8(content: string): string {
-  return btoa(unescape(encodeURIComponent(content)));
-}
-```
-
-**Fix:** Replace the `toBase64Utf8` function in MobileApp.tsx with the same `utf8ToBase64` pattern used in github.ts, or import the function from github.ts.
+No `unescape()` calls remain in the codebase.
 
 ### 11. 🔴 OPEN — No Rate Limiting on GitHub API Calls
 
 **File:** `src/components/mobile/github.ts`
 
-The mobile editor makes authenticated GitHub API calls without any rate-limiting or retry logic. A rapid sequence of operations could hit GitHub's rate limits (5,000/hr for PATs) and lock the user out.
+The mobile editor makes authenticated GitHub API calls without any rate-limiting or retry logic. A rapid sequence of operations could hit GitHub's rate limits (5,000/hr for PATs).
+
+**Mitigating factor:** The mobile editor is currently disabled (maintenance page) while hardening is in progress. When re-enabled, this should be addressed.
 
 **Fix:** Add exponential backoff and check `X-RateLimit-Remaining` headers.
 
-### 12. 🔴 OPEN — YAML Parser is Custom and Incomplete
+### 12. ✅ FIXED — Custom YAML Parser Replaced with `yaml` Library
 
-**File:** `src/components/mobile/mdx.ts` — `parseYaml()` / `serializeYaml()`
+**File:** `src/components/mobile/mdx.ts`
 
-The custom YAML parser only handles a subset of YAML. Edge cases include:
-- Multi-line strings (`|` or `>` block scalars) are not supported
-- Nested objects are not supported
-- Values containing `:` without quotes may be misparsed
-- Round-trip fidelity: parsing then serializing can change the format
+**Original risk:** Custom regex-based YAML parser couldn't handle multi-line strings, nested objects, or colons in values. Data corruption could cause draft/published state issues.
 
-While not a direct security issue, data corruption in frontmatter could lead to unexpected behavior or content exposure (e.g., a `draft: true` field being dropped, causing unpublished content to go live).
+**Fix applied (Phase 2):** The entire custom `parseYaml()` and `serializeYaml()` implementation (80+ lines) has been replaced with the `yaml` library (v2.8.2):
+```ts
+import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 
-**Fix:** Use a battle-tested YAML library like `yaml` or `js-yaml` (they're small enough for client-side use).
+function parseYaml(str: string): Record<string, any> {
+  try {
+    const result = yamlParse(str);
+    return result && typeof result === "object" ? result : {};
+  } catch {
+    return {};
+  }
+}
 
-### 13. 🔴 OPEN (Mitigated) — No CSRF Protection on Mobile Editor Actions
+function serializeYaml(obj: Record<string, any>): string {
+  return yamlStringify(obj, { lineWidth: 0 });
+}
+```
 
-The mobile editor performs state-changing operations (commit to repo, delete files) using only the PAT for authentication. Since this is a client-only app with no backend session, CSRF is not a traditional concern.
+**Verification:** `package.json` includes `yaml: ^2.8.2`. The `yaml` library supports full YAML 1.2 spec including block scalars, nested objects, and special characters.
 
-**Mitigation:** `X-Frame-Options: DENY` is now deployed (see #5), preventing the `/mobile/` page from being embedded in an iframe by a malicious site. Additionally, the CSP on `/mobile/*` restricts script sources to `'self'`. Residual risk is minimal.
+### 13. ✅ FIXED (Mitigated) — CSRF Protection via Headers + CSP
 
-### 14. ✅ FIXED — External Links Now Have `rel="noopener"`
+**Original risk:** Mobile editor in iframe could be manipulated by attacker pages.
 
-The only `target="_blank"` link in the codebase (`MobileApp.tsx` line ~665) correctly uses `rel="noopener noreferrer"`. No other external links with `target="_blank"` were found in any `.astro` component. This finding is resolved.
+**Mitigation:** `X-Frame-Options: DENY` prevents iframe embedding. CSP on `/mobile/*` restricts scripts to `'self'` only. Additionally, the mobile editor is currently disabled. Residual risk is negligible.
+
+### 14. ✅ FIXED — External Links Have `rel="noopener"`
+
+The only `target="_blank"` link in the codebase correctly uses `rel="noopener noreferrer"`.
 
 ---
 
@@ -248,15 +243,11 @@ The only `target="_blank"` link in the codebase (`MobileApp.tsx` line ~665) corr
 
 ### 15. `.gitignore` Includes `src/site.config.ts`
 
-This means the site config (which contains the author's name, company, and site URL) won't be tracked in forks. While intentional for fork customization, it means fork authors may accidentally commit sensitive config if they remove this line.
-
-No action needed, just awareness for fork documentation.
+Intentional for fork customization. No action needed, just awareness for fork documentation.
 
 ### 16. ✅ FIXED — `Astro.generator` Meta Tag Removed
 
-**File:** `src/layouts/Base.astro`
-
-The `<meta name="generator" content={Astro.generator} />` tag has been removed. The framework version is no longer exposed in page source.
+The framework version is no longer exposed in page source.
 
 ### 17. Static Build Output is Public — No Sensitive Data Leakage Found
 
@@ -274,51 +265,57 @@ Cloudflare Pages correctly serves only the `dist/` directory contents.
 found 0 vulnerabilities
 ```
 
-All dependencies are current. The `overrides` for `undici` and `wrangler` in `package.json` are appropriately pinned to patched versions. DOMPurify 3.3.1 was added as a new dependency with no known vulnerabilities.
+All dependencies are current. DOMPurify 3.3.1 and yaml 2.8.2 added with no known vulnerabilities.
+
+---
+
+## Additional Observation: Mobile Editor Temporarily Disabled
+
+**File:** `src/pages/mobile/index.astro`
+
+The mobile editor React component has been commented out and replaced with a maintenance page:
+```
+The mobile editor is temporarily disabled while security improvements are being completed.
+```
+
+The `MobileApp` import is commented out, the service worker registration script is removed, and the `<meta name="apple-mobile-web-app-capable">` and `<link rel="manifest">` tags are removed. This is a sound approach — the editor remains in the codebase with all security fixes applied, but is not executable on the live site during hardening.
+
+**When re-enabling:** Uncomment the MobileApp import and component, re-add the service worker registration, and consider adding the rate-limiting fix (#11) at the same time.
 
 ---
 
 ## Remaining Action Plan
 
-### High priority (before public launch)
+### Before re-enabling the mobile editor
 
-1. **Encrypt PAT in IndexedDB** or implement scoped OAuth (#2) — the only remaining High-severity item
+1. **Add rate limiting** for GitHub API calls (#11) — the only remaining Low-severity code item
 
-### Medium priority (next sprint)
+### Backlog / Nice-to-have
 
-2. **Fix service worker versioning** — bump cache name with deploys (#6)
-3. **Replace `execSync`** in Footer.astro with `import.meta.env` or Vite plugin (#7)
-4. **Document branch protection** requirements for fork authors (#9)
+2. Re-enable mobile editor with all security fixes active
+3. Add a main-site CSP using nonces or `strict-dynamic` (currently blocked by inline scripts)
+4. Consider automating `CACHE_VERSION` bump in sw.js via build script
 
-### Low priority (backlog)
+### Completed ✅
 
-5. **Replace remaining `unescape()`** in MobileApp.tsx `toBase64Utf8` (#10)
-6. **Add rate limiting** for GitHub API calls (#11)
-7. **Replace custom YAML parser** with `js-yaml` (#12)
-
-### Completed (this sprint) ✅
-
-- ~~Sanitize `renderMarkdown()` output with DOMPurify~~ (#1)
-- ~~Validate `document.write()` inputs~~ (#3, #4)
-- ~~Add `_headers` file with security headers~~ (#5)
-- ~~Validate YouTube IDs~~ (#8)
-- ~~Fix `unescape()` in github.ts~~ (#10 partial)
-- ~~Remove `Astro.generator` meta tag~~ (#16)
-- ~~Verify `rel="noopener"` coverage~~ (#14)
+| Phase | Findings Resolved |
+|-------|-------------------|
+| Phase 1 | #1 (Critical XSS), #3 + #4 (input validation), #5 (security headers), #8 (YouTube), #10 partial (github.ts), #14 (noopener), #16 (generator meta) |
+| Phase 2 | #2 (PAT encryption), #6 (SW versioning + network-first), #7 (execSync → Vite env), #9 (feature branches), #10 complete (MobileApp.tsx), #12 (yaml library), #13 (CSRF mitigated), mobile editor disabled |
 
 ---
 
 ## Testing Methodology
 
-- **Static analysis:** Full manual code review of all source files + git diff review of `security` branch changes
+- **Static analysis:** Full manual code review of all source files + git diff review of both `security` branch commits
 - **Dependency audit:** `npm audit` (0 vulnerabilities), `npm outdated` (all current)
 - **Live pen-test:** HTTP header inspection of `https://security.loomwork.pages.dev` and `/mobile/` path, sensitive file probing (`.git/config`, `.env`, `package.json`, `wrangler.toml`)
 - **XSS analysis:** Traced all user-controlled data flows through `dangerouslySetInnerHTML`, `document.write()`, `innerHTML`, and `set:html`; verified DOMPurify integration
-- **Authentication review:** Analyzed PAT storage, transmission, and scope
-- **Service worker audit:** Cache strategy and update mechanism review
-- **Header verification:** Confirmed all security headers are served on deployed site (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP on /mobile/)
-- **Re-verification (March 3, re-audit #2):** No code changes detected. Re-tested all headers on live site — still correctly served. `npm audit` 0 vulnerabilities. `npm outdated` clean. Sensitive file probes (`.git/config`, `.env`, `package.json`, `wrangler.toml`, `site.config.ts`, `_headers`) all return 404.
+- **Authentication review:** Analyzed PAT storage encryption (PBKDF2 + AES-GCM), transmission, and scope
+- **Service worker audit:** Cache strategy (network-first) and versioned cache name review
+- **Header verification:** Confirmed all security headers served on deployed site (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP on /mobile/)
+- **Branch workflow audit:** Verified feature-branch commit flow replaces direct-to-main pushes
 
 ---
 
-*Initial audit: March 3, 2026. Re-audit #1: March 3, 2026. Re-audit #2: March 3, 2026 — no changes, all prior findings confirmed. Re-audit after significant changes or before major releases.*
+*Initial audit: March 3, 2026. Phase 1 fixes verified: March 3, 2026. Phase 2 fixes verified: March 3, 2026. 15 of 18 findings resolved, 0 Critical/High remaining. Re-audit after significant changes or before major releases.*

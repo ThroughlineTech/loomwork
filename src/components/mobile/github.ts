@@ -43,6 +43,73 @@ function headers(token: string) {
   };
 }
 
+// ── Rate-limit-aware fetch wrapper ────────────────────────
+
+let _rateLimitRemaining: number | null = null;
+let _rateLimitReset: number | null = null;
+
+/** Current rate limit state (read-only, for UI display) */
+export function getRateLimitInfo(): { remaining: number | null; resetsAt: Date | null } {
+  return {
+    remaining: _rateLimitRemaining,
+    resetsAt: _rateLimitReset ? new Date(_rateLimitReset * 1000) : null,
+  };
+}
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+
+/**
+ * Fetch wrapper that:
+ * 1. Tracks X-RateLimit-Remaining / X-RateLimit-Reset from every response
+ * 2. Retries on 429 with exponential backoff (1s → 2s → 4s)
+ * 3. Waits if we already know we're rate-limited before even sending
+ */
+async function ghFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  // Pre-flight: if we know we're exhausted, wait until reset
+  if (_rateLimitRemaining !== null && _rateLimitRemaining <= 0 && _rateLimitReset) {
+    const waitMs = Math.max(0, _rateLimitReset * 1000 - Date.now()) + 1000;
+    if (waitMs > 0 && waitMs < 120_000) {
+      await sleep(waitMs);
+    }
+  }
+
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const res = await fetch(input, init);
+
+    // Track rate limit headers from every response
+    const remaining = res.headers.get("X-RateLimit-Remaining");
+    const reset = res.headers.get("X-RateLimit-Reset");
+    if (remaining !== null) _rateLimitRemaining = parseInt(remaining, 10);
+    if (reset !== null) _rateLimitReset = parseInt(reset, 10);
+
+    if (res.status !== 429 && res.status !== 403) return res;
+
+    // 403 can also mean secondary rate limit — check the body hint
+    if (res.status === 403) {
+      const body = await res.clone().text();
+      if (!body.includes("rate limit") && !body.includes("abuse")) return res;
+    }
+
+    // Rate limited — retry with backoff
+    if (attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get("Retry-After");
+      const delayMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : BASE_DELAY_MS * Math.pow(2, attempt);
+      await sleep(Math.min(delayMs, 60_000));
+    } else {
+      lastError = new Error(`GitHub API rate limited after ${MAX_RETRIES} retries (${res.status})`);
+    }
+  }
+  throw lastError || new Error("GitHub API rate limited");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Parse "owner/repo" from a full GitHub URL or "owner/repo" string */
 export function parseRepo(input: string): { owner: string; repo: string } {
   const cleaned = input.replace(/\.git$/, "").replace(/\/$/, "");
@@ -57,7 +124,7 @@ export async function validateToken(
   owner: string,
   repo: string
 ): Promise<boolean> {
-  const res = await fetch(`${API}/repos/${owner}/${repo}`, {
+  const res = await ghFetch(`${API}/repos/${owner}/${repo}`, {
     headers: headers(token),
   });
   return res.ok;
@@ -70,7 +137,7 @@ export async function listFiles(
   repo: string,
   path: string
 ): Promise<RepoFile[]> {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/contents/${path}`,
     { headers: headers(token) }
   );
@@ -112,7 +179,7 @@ export async function getFile(
   repo: string,
   path: string
 ): Promise<FileContent> {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/contents/${path}`,
     { headers: headers(token) }
   );
@@ -144,7 +211,7 @@ export async function putFile(
   };
   if (sha) body.sha = sha;
 
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/contents/${path}`,
     {
       method: "PUT",
@@ -179,7 +246,7 @@ export async function putFileBase64(
   };
   if (sha) body.sha = sha;
 
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/contents/${path}`,
     {
       method: "PUT",
@@ -211,7 +278,7 @@ export async function commitFilesBatch(
     throw new Error("No files provided for batch commit.");
   }
 
-  const refRes = await fetch(
+  const refRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/ref/heads/${branch}`,
     { headers: headers(token) }
   );
@@ -221,7 +288,7 @@ export async function commitFilesBatch(
   const refData = await refRes.json();
   const headSha = refData.object?.sha;
 
-  const headCommitRes = await fetch(
+  const headCommitRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/commits/${headSha}`,
     { headers: headers(token) }
   );
@@ -233,7 +300,7 @@ export async function commitFilesBatch(
 
   const treeEntries = [];
   for (const file of files) {
-    const blobRes = await fetch(
+    const blobRes = await ghFetch(
       `${API}/repos/${owner}/${repo}/git/blobs`,
       {
         method: "POST",
@@ -257,7 +324,7 @@ export async function commitFilesBatch(
     });
   }
 
-  const treeRes = await fetch(
+  const treeRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/trees`,
     {
       method: "POST",
@@ -274,7 +341,7 @@ export async function commitFilesBatch(
   }
   const treeData = await treeRes.json();
 
-  const commitRes = await fetch(
+  const commitRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/commits`,
     {
       method: "POST",
@@ -292,7 +359,7 @@ export async function commitFilesBatch(
   }
   const commitData = await commitRes.json();
 
-  const updateRefRes = await fetch(
+  const updateRefRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/refs/heads/${branch}`,
     {
       method: "PATCH",
@@ -320,7 +387,7 @@ export async function deleteFile(
   sha: string,
   message: string
 ): Promise<void> {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/contents/${path}`,
     {
       method: "DELETE",
@@ -338,7 +405,7 @@ export async function getBranchSha(
   repo: string,
   branch: string
 ): Promise<string | null> {
-  const res = await fetch(
+  const res = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/ref/heads/${branch}`,
     { headers: headers(token) }
   );
@@ -356,7 +423,7 @@ export async function createBranch(
   fromBranch: string = "main"
 ): Promise<string> {
   // Get the SHA of the base branch
-  const baseRes = await fetch(
+  const baseRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/ref/heads/${fromBranch}`,
     { headers: headers(token) }
   );
@@ -366,7 +433,7 @@ export async function createBranch(
   if (!baseSha) throw new Error(`Could not read SHA of ${fromBranch}`);
 
   // Create the new ref
-  const createRes = await fetch(
+  const createRes = await ghFetch(
     `${API}/repos/${owner}/${repo}/git/refs`,
     {
       method: "POST",
