@@ -541,14 +541,14 @@
 
       // Swap theme CSS
       const themeLink = document.getElementById("lw-theme") as HTMLLinkElement;
-      if (themeLink && effectiveTheme) {
+      if (themeLink && effectiveTheme && /^[a-z]+$/.test(effectiveTheme)) {
         themeLink.href = "/themes/" + effectiveTheme + ".css";
       }
 
       // Swap fonts
       const fontsLink = document.getElementById("lw-fonts") as HTMLLinkElement;
       const meta = themeMap[effectiveTheme];
-      if (fontsLink && meta?.fonts_url) {
+      if (fontsLink && meta?.fonts_url && meta.fonts_url.indexOf("https://fonts.googleapis.com/") === 0) {
         fontsLink.href = meta.fonts_url;
       }
 

@@ -1,21 +1,17 @@
 ---
 import { SITE } from "../site.config";
 
-let lastCommitDate = "";
-try {
-  const { execSync } = await import("child_process");
-  const raw = execSync("git log -1 --format=%cI", { encoding: "utf-8" }).trim();
-  lastCommitDate = new Date(raw).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-} catch {
-  lastCommitDate = "unknown";
-}
+const buildDate = import.meta.env.BUILD_DATE || "";
+const lastCommitDate = buildDate
+  ? new Date(buildDate).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    })
+  : "";
 ---
 
 <footer class="site-footer">

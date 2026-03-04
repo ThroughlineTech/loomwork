@@ -30,6 +30,9 @@ export default defineConfig({
 
   // React 19 + Cloudflare Workers fix
   vite: {
+    define: {
+      "import.meta.env.BUILD_DATE": JSON.stringify(new Date().toISOString()),
+    },
     resolve: {
       alias: import.meta.env.PROD && {
         "react-dom/server": "react-dom/server.edge",

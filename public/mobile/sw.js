@@ -1,7 +1,9 @@
-// Loomwork Mobile — Service Worker (minimal)
-// Caches the app shell for offline access
+// Loomwork Mobile — Service Worker
+// Network-first for navigations, cache-first for assets
+// Cache name is bumped each deploy to ensure updates reach PWA users
 
-const CACHE_NAME = "loomwork-mobile-v1";
+const CACHE_VERSION = "2026-03-03T00";  // bump with each deploy
+const CACHE_NAME = `loomwork-mobile-${CACHE_VERSION}`;
 const SHELL_URLS = ["/mobile/"];
 
 self.addEventListener("install", (event) => {
@@ -12,6 +14,7 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  // Purge all old caches
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
@@ -21,21 +24,22 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only cache navigations to /mobile — let API calls pass through
-  const pathname = new URL(event.request.url).pathname;
+  const url = new URL(event.request.url);
+
+  // Only handle /mobile/ navigations — let API calls and other requests pass through
   if (
     event.request.mode === "navigate" &&
-    (pathname === "/mobile" || pathname.startsWith("/mobile/"))
+    (url.pathname === "/mobile" || url.pathname.startsWith("/mobile/"))
   ) {
+    // Network-first: try network, fall back to cache for offline support
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const fetched = fetch(event.request).then((response) => {
+      fetch(event.request)
+        .then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
-        });
-        return cached || fetched;
-      })
+        })
+        .catch(() => caches.match(event.request))
     );
   }
 });

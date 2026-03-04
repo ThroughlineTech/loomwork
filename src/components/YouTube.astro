@@ -4,9 +4,11 @@ interface Props {
   title?: string;
 }
 
-const { id, title = "Video" } = Astro.props;
+const { id: rawId, title = "Video" } = Astro.props;
+const id = /^[a-zA-Z0-9_-]{11}$/.test(rawId) ? rawId : "";
 ---
 
+{id ? (
 <div class="youtube-embed">
   <lite-youtube videoid={id}>
     <a href={`https://www.youtube.com/watch?v=${id}`} class="youtube-embed__link">
@@ -28,6 +30,7 @@ const { id, title = "Video" } = Astro.props;
     allowfullscreen
   />
 */}
+) : <p><em>Invalid video ID.</em></p>}
 
 <style>
   .youtube-embed {

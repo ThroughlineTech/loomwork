@@ -416,10 +416,10 @@ const themeEntries = Object.entries(THEMES) as [ThemeName, (typeof THEMES)[Theme
       select.addEventListener("change", () => {
         const picked = select.value;
         const themeLink = document.getElementById("lw-theme") as HTMLLinkElement;
-        if (themeLink && picked) themeLink.href = "/themes/" + picked + ".css";
+        if (themeLink && picked && /^[a-z]+$/.test(picked)) themeLink.href = "/themes/" + picked + ".css";
         const fontsLink = document.getElementById("lw-fonts") as HTMLLinkElement;
         const meta = themeMap[picked];
-        if (fontsLink && meta?.fonts_url) fontsLink.href = meta.fonts_url;
+        if (fontsLink && meta?.fonts_url && meta.fonts_url.indexOf("https://fonts.googleapis.com/") === 0) fontsLink.href = meta.fonts_url;
         const prefs = loadPrefs();
         prefs.theme = picked === defaultTheme ? "" : picked;
         savePrefs(prefs);

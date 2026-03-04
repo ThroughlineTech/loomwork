@@ -10,15 +10,18 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.7.0",
+    "@astrojs/cloudflare": "^12.5.0",
     "@astrojs/mdx": "^4.3.0",
     "@astrojs/react": "^4.2.0",
     "@astrojs/sitemap": "^3.3.0",
-    "@astrojs/cloudflare": "^12.5.0",
+    "astro": "^5.7.0",
+    "dompurify": "^3.3.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "typescript": "^5.8.0"

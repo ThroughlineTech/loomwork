@@ -4,6 +4,13 @@
 
 const API = "https://api.github.com";
 
+/** UTF-8-safe base64 encoding (replaces deprecated unescape/encodeURIComponent pattern) */
+function utf8ToBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  const binString = Array.from(bytes, (b) => String.fromCodePoint(b)).join("");
+  return btoa(binString);
+}
+
 export interface RepoFile {
   name: string;
   path: string;
@@ -133,7 +140,7 @@ export async function putFile(
 ): Promise<CommitResult> {
   const body: any = {
     message,
-    content: btoa(unescape(encodeURIComponent(content))),
+    content: utf8ToBase64(content),
   };
   if (sha) body.sha = sha;
 
@@ -322,4 +329,54 @@ export async function deleteFile(
     }
   );
   if (!res.ok) throw new Error(`Failed to delete ${path}: ${res.status}`);
+}
+
+/** Get the SHA of a branch head (null if branch doesn't exist) */
+export async function getBranchSha(
+  token: string,
+  owner: string,
+  repo: string,
+  branch: string
+): Promise<string | null> {
+  const res = await fetch(
+    `${API}/repos/${owner}/${repo}/git/ref/heads/${branch}`,
+    { headers: headers(token) }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.object?.sha ?? null;
+}
+
+/** Create a branch from a base branch (e.g. main). Returns the SHA. */
+export async function createBranch(
+  token: string,
+  owner: string,
+  repo: string,
+  newBranch: string,
+  fromBranch: string = "main"
+): Promise<string> {
+  // Get the SHA of the base branch
+  const baseRes = await fetch(
+    `${API}/repos/${owner}/${repo}/git/ref/heads/${fromBranch}`,
+    { headers: headers(token) }
+  );
+  if (!baseRes.ok) throw new Error(`Base branch '${fromBranch}' not found: ${baseRes.status}`);
+  const baseData = await baseRes.json();
+  const baseSha = baseData.object?.sha;
+  if (!baseSha) throw new Error(`Could not read SHA of ${fromBranch}`);
+
+  // Create the new ref
+  const createRes = await fetch(
+    `${API}/repos/${owner}/${repo}/git/refs`,
+    {
+      method: "POST",
+      headers: headers(token),
+      body: JSON.stringify({ ref: `refs/heads/${newBranch}`, sha: baseSha }),
+    }
+  );
+  if (!createRes.ok) {
+    const err = await createRes.json().catch(() => ({}));
+    throw new Error(`Failed to create branch '${newBranch}': ${createRes.status} ${err.message || ""}`);
+  }
+  return baseSha;
 }

@@ -106,14 +106,14 @@ const themeEntries = Object.entries(THEMES) as [ThemeName, (typeof THEMES)[Theme
 
       // Swap theme CSS link
       const themeLink = document.getElementById("lw-theme") as HTMLLinkElement | null;
-      if (themeLink && picked) {
+      if (themeLink && picked && /^[a-z]+$/.test(picked)) {
         themeLink.href = "/themes/" + picked + ".css";
       }
 
       // Swap fonts link
       const fontsLink = document.getElementById("lw-fonts") as HTMLLinkElement | null;
       const meta = themeMap[picked];
-      if (fontsLink && meta?.fonts_url) {
+      if (fontsLink && meta?.fonts_url && meta.fonts_url.indexOf("https://fonts.googleapis.com/") === 0) {
         fontsLink.href = meta.fonts_url;
       }
 

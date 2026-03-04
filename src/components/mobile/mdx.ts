@@ -2,6 +2,8 @@
 // MDX UTILITIES - Parse frontmatter, split content
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+import { parse as yamlParse, stringify as yamlStringify } from "yaml";
+
 export interface ParsedFile {
   frontmatter: Record<string, any>;
   body: string;
@@ -29,96 +31,19 @@ export function serializeFile(
   return `---\n${yaml}---\n${body}`;
 }
 
-/** Simple YAML parser (handles the subset used in Loomwork frontmatter) */
+/** Parse YAML string into an object using the yaml library */
 function parseYaml(str: string): Record<string, any> {
-  const result: Record<string, any> = {};
-  const lines = str.split("\n");
-  let currentKey = "";
-
-  for (const line of lines) {
-    // Array continuation
-    if (line.match(/^\s+-\s+/)) {
-      const value = line.replace(/^\s+-\s+/, "").replace(/^["']|["']$/g, "").trim();
-      if (currentKey && Array.isArray(result[currentKey])) {
-        result[currentKey].push(value);
-      }
-      continue;
-    }
-
-    const kvMatch = line.match(/^(\w[\w_]*)\s*:\s*(.*)$/);
-    if (kvMatch) {
-      const key = kvMatch[1];
-      let value: any = kvMatch[2].trim();
-      currentKey = key;
-
-      if (value === "" || value === "[]") {
-        // Check if next lines are array items
-        result[key] = [];
-        continue;
-      }
-
-      // Array inline: [a, b, c]
-      if (value.startsWith("[") && value.endsWith("]")) {
-        result[key] = value
-          .slice(1, -1)
-          .split(",")
-          .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-          .filter(Boolean);
-        continue;
-      }
-
-      // Boolean
-      if (value === "true") { result[key] = true; continue; }
-      if (value === "false") { result[key] = false; continue; }
-
-      // Number
-      if (/^\d+$/.test(value)) { result[key] = parseInt(value, 10); continue; }
-
-      // Quoted string
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
-        result[key] = value.slice(1, -1);
-        continue;
-      }
-
-      result[key] = value;
-    }
+  try {
+    const result = yamlParse(str);
+    return result && typeof result === "object" ? result : {};
+  } catch {
+    return {};
   }
-
-  return result;
 }
 
-/** Simple YAML serializer for frontmatter */
+/** Serialize object to YAML string using the yaml library */
 function serializeYaml(obj: Record<string, any>): string {
-  const lines: string[] = [];
-  for (const [key, value] of Object.entries(obj)) {
-    if (value === undefined || value === null) continue;
-
-    if (Array.isArray(value)) {
-      if (value.length === 0) {
-        lines.push(`${key}: []`);
-      } else {
-        lines.push(`${key}:`);
-        for (const item of value) {
-          lines.push(`  - "${item}"`);
-        }
-      }
-    } else if (typeof value === "string") {
-      // Quote strings that contain special chars
-      if (value.includes(":") || value.includes("#") || value.includes('"')) {
-        lines.push(`${key}: "${value.replace(/"/g, '\\"')}"`);
-      } else {
-        lines.push(`${key}: "${value}"`);
-      }
-    } else if (typeof value === "boolean") {
-      lines.push(`${key}: ${value}`);
-    } else if (typeof value === "number") {
-      lines.push(`${key}: ${value}`);
-    } else {
-      lines.push(`${key}: ${String(value)}`);
-    }
-  }
-  return lines.join("\n") + "\n";
+  return yamlStringify(obj, { lineWidth: 0 });
 }
 
 /** Render very basic markdown to HTML (for preview without dependencies) */

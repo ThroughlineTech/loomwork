@@ -72,8 +72,18 @@ You can also use the editor toolbar image button (`🖼️`) in Edit mode to pic
 
 - No OAuth (PAT only)
 - Image picker is available, but there is no media library browser yet
-- No branch/PR workflow (commits go to `main`)
 - No schema-driven dynamic frontmatter form yet (baseline fields are currently hardcoded)
+- **Mobile editor is currently disabled** — the `/mobile` page shows a maintenance notice while security hardening is completed
+
+## Roadmap
+
+- **Pre-commit preview / diff view** — show a summary of all changes before committing so the author can review what will be pushed
+- **PR workflow integration** — after creating a feature branch, offer a one-tap "Open PR" link to GitHub
+- **Passphrase-based session unlock** — encrypted credentials require the passphrase each session; add an unlock screen instead of full re-login
+- **Schema-driven frontmatter forms** — read `loomwork.schema.json` at runtime to dynamically generate the form
+- **Media library browser** — browse and manage images in `public/images/` from within the editor
+- **Conflict detection** — warn when the remote file has changed since the editor loaded it
+- **Rate limit awareness** — show remaining GitHub API quota and gracefully handle 429s
 
 ## Suggested Smoke Test
 

@@ -42,8 +42,6 @@ const fontsUrl = SITE.fonts_url || themeEntry?.fonts_url || "";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content={Astro.generator} />
-
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
@@ -120,10 +118,10 @@ const fontsUrl = SITE.fonts_url || themeEntry?.fonts_url || "";
             } catch(e2) {}
           }
         } catch(e) {}
-        if (theme) {
+        if (theme && /^[a-z]+$/.test(theme)) {
           document.write('<link id="lw-theme" rel="stylesheet" href="/themes/' + theme + '.css">');
         }
-        if (fonts) {
+        if (fonts && fonts.indexOf('https://fonts.googleapis.com/') === 0) {
           document.write('<link id="lw-fonts" rel="stylesheet" href="' + fonts + '">');
         }
       })();

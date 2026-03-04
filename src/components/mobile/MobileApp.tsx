@@ -19,9 +19,12 @@ import {
   getFile,
   putFile,
   commitFilesBatch,
+  getBranchSha,
+  createBranch,
 } from "./github";
 import type { RepoFile, FileContent } from "./github";
 import { parseFile, serializeFile, renderMarkdown, getTitle } from "./mdx";
+import DOMPurify from "dompurify";
 import "./mobile.css";
 
 // ── Types ────────────────────────────────────────────────
@@ -92,6 +95,7 @@ export function MobileApp({
   useEffect(() => {
     (async () => {
       try {
+        // Try loading without passphrase first (legacy unencrypted)
         const creds = await getCredentials();
         if (creds) {
           set({ creds, screen: "browser", loading: false });
@@ -124,7 +128,7 @@ export function MobileApp({
   }
 
   // ── Login ──────────────────────────────────────────────
-  async function handleLogin(repoInput: string, token: string) {
+  async function handleLogin(repoInput: string, token: string, passphrase: string) {
     set({ loading: true, error: null });
     try {
       const { owner, repo } = parseRepo(repoInput);
@@ -134,7 +138,7 @@ export function MobileApp({
         return;
       }
       const creds: Credentials = { token, owner, repo };
-      await saveCredentials(creds);
+      await saveCredentials(creds, passphrase);
       set({ creds, screen: "browser", loading: false });
       loadFiles(creds);
     } catch (e: any) {
@@ -220,7 +224,17 @@ export function MobileApp({
     set({ committing: true, error: null });
     try {
       const content = serializeFile(state.frontmatter, state.body);
+      const branchName = `mobile/${Date.now()}`;
       let result;
+
+      // Create a feature branch from main
+      await createBranch(
+        state.creds.token,
+        state.creds.owner,
+        state.creds.repo,
+        branchName,
+        "main"
+      );
 
       if (state.pendingImages.length > 0) {
         const batchFiles = [
@@ -238,19 +252,21 @@ export function MobileApp({
           state.creds.token,
           state.creds.owner,
           state.creds.repo,
-          "main",
+          branchName,
           state.commitMessage,
           batchFiles
         );
       } else {
-        result = await putFile(
+        result = await commitFilesBatch(
           state.creds.token,
           state.creds.owner,
           state.creds.repo,
-          state.currentFile.path,
-          content,
+          branchName,
           state.commitMessage,
-          state.currentSha || undefined
+          [{
+            path: state.currentFile.path,
+            contentBase64: toBase64Utf8(content),
+          }]
         );
       }
 
@@ -272,10 +288,10 @@ export function MobileApp({
         showCommit: false,
         committing: false,
         pendingImages: [],
-        success: `Committed! Cloudflare will deploy shortly.`,
+        success: `Committed to branch '${branchName}'. Open a PR to merge to main.`,
       });
       // Clear success after a few seconds
-      setTimeout(() => set({ success: null }), 5000);
+      setTimeout(() => set({ success: null }), 8000);
     } catch (e: any) {
       set({ error: e.message, committing: false });
     }
@@ -466,11 +482,12 @@ function LoginScreen({
   loading,
 }: {
   siteName: string;
-  onLogin: (repo: string, token: string) => void;
+  onLogin: (repo: string, token: string, passphrase: string) => void;
   loading: boolean;
 }) {
   const [repo, setRepo] = useState("");
   const [token, setToken] = useState("");
+  const [passphrase, setPassphrase] = useState("");
 
   return (
     <div className="m-login">
@@ -481,7 +498,7 @@ function LoginScreen({
         className="m-login__form"
         onSubmit={(e) => {
           e.preventDefault();
-          if (repo && token) onLogin(repo, token);
+          if (repo && token && passphrase) onLogin(repo, token, passphrase);
         }}
       >
         <div>
@@ -514,13 +531,29 @@ function LoginScreen({
             autoCorrect="off"
           />
           <p style={{ fontSize: "0.75rem", color: "#78716c", marginTop: "0.25rem" }}>
-            Create at GitHub → Settings → Developer Settings → Personal Access Tokens
+            Use a <strong>fine-grained PAT</strong> scoped to <code>Contents: Read and write</code> on your repo only.
+          </p>
+        </div>
+        <div>
+          <label className="m-label" htmlFor="passphrase">
+            Encryption Passphrase
+          </label>
+          <input
+            id="passphrase"
+            className="m-input"
+            type="password"
+            placeholder="Used to encrypt your token locally"
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+          />
+          <p style={{ fontSize: "0.75rem", color: "#78716c", marginTop: "0.25rem" }}>
+            Your token is encrypted before being stored on this device.
           </p>
         </div>
         <button
           type="submit"
           className="m-btn m-btn--primary"
-          disabled={!repo || !token || loading}
+          disabled={!repo || !token || !passphrase || loading}
         >
           {loading ? <span className="m-spinner" /> : "Connect"}
         </button>
@@ -686,7 +719,7 @@ function Editor({
         <div
           className="m-preview"
           dangerouslySetInnerHTML={{
-            __html: renderMarkdown(body),
+            __html: DOMPurify.sanitize(renderMarkdown(body)),
           }}
         />
       )}
@@ -747,7 +780,9 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 function toBase64Utf8(content: string): string {
-  return btoa(unescape(encodeURIComponent(content)));
+  const bytes = new TextEncoder().encode(content);
+  const binString = Array.from(bytes, (b) => String.fromCodePoint(b)).join("");
+  return btoa(binString);
 }
 
 // ── Frontmatter Form ─────────────────────────────────────
@@ -915,7 +950,8 @@ function CommitDialog({
       <div className="m-dialog" onClick={(e) => e.stopPropagation()}>
         <h2 className="m-dialog__title">Publish Changes</h2>
         <p style={{ fontSize: "0.875rem", color: "#78716c", marginBottom: "1rem" }}>
-          This will commit to the main branch. Cloudflare will auto-deploy.
+          This will create a new branch from main and commit your changes there.
+          Open a pull request on GitHub to merge.
         </p>
         <label className="m-label">Commit message</label>
         <input
