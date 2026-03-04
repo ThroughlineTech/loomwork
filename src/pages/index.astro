@@ -93,20 +93,29 @@ import { SITE } from "../site.config";
 </Base>
 
 <style is:global>
-  /* Single-viewport homepage: pin footer to bottom edge */
-  body:has(.hero) {
-    height: 100vh;
-    overflow: hidden;
+  /* Single-viewport homepage — desktop only */
+  @media (min-width: 768px) {
+    body:has(.hero) {
+      height: 100vh;
+      overflow: hidden;
+    }
+    body:has(.hero) > main {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    body:has(.hero) > .site-footer {
+      margin-block-start: 0;
+      padding-block: var(--space-md);
+      flex-shrink: 0;
+    }
   }
-  body:has(.hero) > main {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  body:has(.hero) > .site-footer {
-    margin-block-start: 0;
-    padding-block: var(--space-md);
-    flex-shrink: 0;
+  /* Mobile: normal scroll, compact footer */
+  @media (max-width: 767px) {
+    body:has(.hero) > .site-footer {
+      margin-block-start: var(--space-lg);
+      padding-block: var(--space-md);
+    }
   }
 </style>
 
