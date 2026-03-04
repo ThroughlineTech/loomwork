@@ -1,4 +1,4 @@
-# Loomwork 2.0 — Project Description
+# Loomwork 2.1 — Project Description
 
 ## Overview
 
@@ -192,6 +192,9 @@ loomwork/
 │
 ├── docs/                                # Project documentation
 │   ├── PROJECT.md                       # ← you are here
+│   ├── CHANGELOG-PROMPT.md              # Agent prompt for updating progress pages
+│   ├── CSS-ARCHITECTURE.md              # Cascade order, specificity, variable reference
+│   ├── MIGRATION.md                     # Adopting Loomwork from scratch
 │   ├── MOBILE_PROJECT.md
 │   ├── MOBILE_README.md
 │   ├── UPGRADE.md
@@ -200,6 +203,15 @@ loomwork/
 │
 ├── public/
 │   ├── _redirects
+│   ├── favicon.svg                     # Site favicon (loom mark)
+│   ├── icons/                           # Homepage feature icons (site file)
+│   │   ├── controls.svg
+│   │   ├── fork.svg
+│   │   ├── loom.svg
+│   │   ├── mobile.svg
+│   │   ├── templates.svg
+│   │   ├── themes.svg
+│   │   └── zeroflash.svg
 │   ├── images/
 │   ├── mobile/                          # PWA assets
 │   │   ├── manifest.json
@@ -227,6 +239,7 @@ loomwork/
     │   │   ├── guide.mdx
     │   │   ├── mobile-app.mdx
     │   │   ├── page-types.mdx
+    │   │   ├── progress.mdx             # Running changelog
     │   │   ├── reader-controls.mdx
     │   │   ├── theming.mdx
     │   │   └── deep-dives/              # Longform section
@@ -241,8 +254,8 @@ loomwork/
     │   └── Longform.astro               # Split-panel deep dive layout
     │
     ├── components/
-    │   ├── Header.astro
-    │   ├── Footer.astro
+    │   ├── Header.astro                 # Site file — customize freely
+    │   ├── Footer.astro                 # Site file — customize freely
     │   ├── Callout.astro                # Admonitions (info/warning/tip/danger)
     │   ├── DemoControl.astro
     │   ├── ReaderControls.astro         # Floating preferences panel + all JS
@@ -330,6 +343,11 @@ Output directory: `dist/`
 | — | FOUC-free theme loading | ✅ Shipped |
 | — | Dark mode toggle fix | ✅ Shipped |
 | — | Callout dark mode support | ✅ Shipped |
+| — | `--header-height` CSS variable | ✅ Shipped (2.1) |
+| — | Header/Footer as site files | ✅ Shipped (2.1) |
+| — | Homepage feature rotator + SVG icons | ✅ Shipped (2.1) |
+| — | Progress/changelog page | ✅ Shipped (2.1) |
+| — | CSS Architecture documentation | ✅ Shipped (2.1) |
 | Next | D-pad navigation bar | Deferred |
 | Future | E2E tests (Playwright) | Planned |
 | Future | GitHub Actions CI (build + check) | Planned |

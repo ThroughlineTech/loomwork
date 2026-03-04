@@ -193,10 +193,13 @@ rm -f src/content/pages/building.mdx
 rm -f src/content/pages/theming.mdx
 rm -f src/content/pages/page-types.mdx
 rm -f src/content/pages/reader-controls.mdx
+rm -f src/content/pages/progress.mdx
 rm -f src/content/pages/deep-dives/campfire-2-retro.mdx
 rm -f src/content/pages/deep-dives/designing-for-focus.mdx
 rm -f src/content/pages/deep-dives/what-is-longform.mdx
 rm -f public/images/1771364152056-image.jpg
+rm -rf public/icons
+rm -f public/favicon.svg
 ```
 
 #### 9. Add a longform demo page

@@ -49,6 +49,8 @@ The nav in site.config.ts should include links to all 5 pages. Use a "Deep Dives
 Delete any content pages that came with the repo (anything referencing Loomwork, deploy guides, mobile app pages, "about Loomwork", etc.), including the deep-dives/ folder that ships with loomwork.
 Delete the docs/ directory (loomwork project docs, prompts, audits)
 Delete any orphaned images in public/images/ that were referenced by deleted pages
+Delete public/icons/ (loomwork homepage icons — replace with your own or remove)
+Replace public/favicon.svg with your own favicon
 Replace README.md with a site-specific readme for Coastal Kitchen
 Note: These are intentional framework files — do NOT delete them:
 - src/pages/mobile/ and src/components/mobile/ (PWA mobile editor)

@@ -9,15 +9,24 @@ nav_order: 90
 
 ## March 4, 2026
 
+- ✦ Custom SVG icons for all 6 homepage features — monoline stroke style, saved as static files in `/public/icons/`
+- ✦ Loom brand mark — weave icon in header logo and hero title
+- ✦ Favicon — loom weave mark as `favicon.svg`
 - ✦ Auto-rotating feature showcase on the homepage — 6 features, dot nav, hover-to-pause
 - ✦ New `--header-height` CSS variable — sites with custom headers override one value instead of hacking layouts
+- ◈ Homepage spacing uses fixed `px` values — whitespace stays constant at all browser font sizes
+- ◈ Hero title centering — icon is absolutely positioned so text centers independently
 - ◈ Longform layout uses the header-height variable — no more hardcoded `4rem` in two places
 - ◈ `body--longform` gets automatic padding-top for fixed-position headers
+- ✎ PROJECT.md updated to 2.1 — new file tree entries, What's Next table, Header/Footer as site files
+- ✎ VERIFICATION_AGENT_PROMPT updated — fork process now covers icons and favicon
+- ✎ UPGRADE-PROMPT updated — placeholder delete list includes progress.mdx, icons, favicon
 - ✎ New CSS Architecture doc — cascade order, specificity rules, canonical variable table, dark mode patterns
 - ✎ UPGRADE-PROMPT step 7 rewritten with prescriptive sed commands and complete token mapping
 - ✎ `fonts_url` clearing is now a loud, explicit step in the upgrade flow
 - ⚙ Header.astro and Footer.astro reclassified as site files — upgrades no longer overwrite your custom header
-- ✓ Feature rotator fixed height eliminates footer bounce during transitions
+- ✓ Feature rotator CSS grid stacking eliminates fixed-height overflow issues
+- ✓ Footer stays on screen at all font sizes
 
 ## March 3, 2026
 
