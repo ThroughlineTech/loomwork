@@ -41,14 +41,14 @@ do not read or manually edit conflicted files):
 
 **Site files — keep ours:**
 ```bash
-for f in README.md src/site.config.ts src/styles/site.css src/pages/index.astro astro.config.mjs wrangler.toml; do
+for f in README.md src/site.config.ts src/styles/site.css src/pages/index.astro src/components/Header.astro src/components/Footer.astro astro.config.mjs wrangler.toml; do
   git checkout --ours "$f" 2>/dev/null && git add "$f" 2>/dev/null
 done
 ```
 
 **Framework files — take theirs:**
 ```bash
-for f in src/layouts/Base.astro src/layouts/Content.astro src/layouts/Longform.astro src/components/Header.astro src/components/Footer.astro src/components/Callout.astro src/components/TableOfContents.astro src/components/YouTube.astro src/components/DemoControl.astro src/components/ThemePicker.astro src/components/ReaderControls.astro src/components/ReadingEnhancements.astro src/content.config.ts src/styles/global.css src/styles/themes.css src/themes/_index.ts "src/pages/[...slug].astro" src/pages/404.astro src/pages/mobile/index.astro; do
+for f in src/layouts/Base.astro src/layouts/Content.astro src/layouts/Longform.astro src/components/Callout.astro src/components/TableOfContents.astro src/components/YouTube.astro src/components/DemoControl.astro src/components/ThemePicker.astro src/components/ReaderControls.astro src/components/ReadingEnhancements.astro src/content.config.ts src/styles/global.css src/styles/themes.css src/themes/_index.ts "src/pages/[...slug].astro" src/pages/404.astro src/pages/mobile/index.astro; do
   git checkout --theirs "$f" 2>/dev/null && git add "$f" 2>/dev/null
 done
 ```
@@ -100,7 +100,7 @@ and fix it before continuing.
 
 #### 6. Enable theme and reader controls in site.config.ts
 
-Read `src/site.config.ts`. Add or update these two fields inside the SITE
+Read `src/site.config.ts`. Add or update these fields inside the SITE
 object (keep all existing fields — only add/change these):
 
 ```typescript
@@ -108,36 +108,80 @@ theme: "campfire",
 reader_controls: true,
 ```
 
-Also set `fonts_url` to empty string so the theme controls fonts:
+**Critical: clear `fonts_url` so the theme controls fonts.** If `fonts_url`
+exists in the file and has a URL value, change it to an empty string:
+
 ```typescript
 fonts_url: "",
 ```
 
-If `fonts_url` does not exist in the file, skip this — the theme will
-use its own fonts by default.
+If `fonts_url` is not present, do nothing — the theme will use its own
+fonts by default. But if it has a Google Fonts URL, that URL will **override
+the theme's font choices** and make theme switching look broken.
 
-#### 7. Clean up site.css
+#### 7. Migrate site.css to theme-compatible tokens
 
-Read `src/styles/site.css`. Remove any `:root` block that defines `--color-*`
-or `--font-*` variables (the theme provides these now). Keep everything else
-(component styles, layout rules, animations). If the file has accent color
-overrides (`--color-accent`, `--color-accent-hover`), keep those in a small
-`:root` block. The result should have at most ~30 lines of variable overrides.
+This step rewires site.css to use Loomwork's standard CSS variables so
+themes, dark mode, and reader controls all work correctly.
 
-If site.css references custom variables like `--ink`, `--warm-cream`, etc.
-that are NOT loomwork standard variables, replace them:
-- `--ink` → `--color-text`
-- `--ink-muted` → `--color-text-muted`
-- `--warm-cream` → `--color-bg`
-- `--stone-50` → `--color-surface`
-- `--stone-100` → `--color-bg-alt`
-- `--stone-200` → `--color-border`
-- `--accent` → `--color-accent`
-- `--accent-light` → `--color-accent-light`
-- `--font-display` → `--font-heading`
+**Step 7a: Remove `:root` variable blocks that fight the theme.**
 
-Also replace any hardcoded hex colors in `src/pages/index.astro` with CSS
-variable references (e.g. `#2d6a4f` → `var(--color-accent)`).
+Read `src/styles/site.css`. If it has a `:root` block that defines
+`--color-bg`, `--color-text`, `--color-surface`, `--font-body`,
+`--font-heading`, or other theme-provided variables, **delete that entire
+`:root` block**. These variables are now provided by the theme.
+
+Keep a small `:root` block only if it defines:
+- Brand accent overrides (`--color-accent`, `--color-accent-hover`)
+- `--header-height` (if the site header is taller than 4rem)
+- Site-specific signal/utility colors (e.g. `--signal-green`)
+
+The `:root` block should be under ~10 lines. If there is no `:root` block,
+that's fine — move to step 7b.
+
+**Step 7b: Replace non-standard variable names.**
+
+If site.css uses old/custom variable names, replace them with Loomwork
+standard names. Run this sed command (order matters — longer names first
+to avoid partial matches):
+
+```bash
+sed -i \
+  -e 's/var(--ink-light)/var(--color-text)/g' \
+  -e 's/var(--ink-muted)/var(--color-text-muted)/g' \
+  -e 's/var(--ink)/var(--color-text)/g' \
+  -e 's/var(--warm-cream)/var(--color-bg)/g' \
+  -e 's/var(--stone-50)/var(--color-surface)/g' \
+  -e 's/var(--stone-100)/var(--color-bg-alt)/g' \
+  -e 's/var(--stone-200)/var(--color-border)/g' \
+  -e 's/var(--stone-300)/var(--color-text-muted)/g' \
+  -e 's/var(--stone-400)/var(--color-text-muted)/g' \
+  -e 's/var(--stone-500)/var(--color-text-muted)/g' \
+  -e 's/var(--accent-light)/var(--color-accent-light)/g' \
+  -e 's/var(--accent)/var(--color-accent)/g' \
+  -e 's/var(--font-display)/var(--font-heading)/g' \
+  src/styles/site.css
+```
+
+If site.css does not contain any of these old variable names, the sed
+command is a harmless no-op.
+
+**Step 7c: Replace hardcoded colors with CSS variables.**
+
+Search site.css and `src/pages/index.astro` for hardcoded hex colors
+(e.g. `#2d6a4f`, `#f5f5f0`, `#1a1a1a`). Replace them with the nearest
+CSS variable:
+- Light backgrounds (`#f5f5f0`, `#fff`, `#fafafa`) → `var(--color-bg)` or `var(--color-bg-alt)`
+- Dark text (`#111`, `#333`, `#1a1a1a`) → `var(--color-text)`
+- Muted text (`#666`, `#888`, `#999`) → `var(--color-text-muted)`
+- Brand/accent colors → `var(--color-accent)`
+- Borders (`#ddd`, `#e0e0e0`) → `var(--color-border)`
+- Hardcoded rgba() backgrounds → `color-mix(in srgb, var(--color-bg) 92%, transparent)`
+
+This ensures the site respects themes and dark mode.
+
+See `docs/CSS-ARCHITECTURE.md` for the complete variable reference table
+and detailed guidance on shadows, frosted glass, and dark mode patterns.
 
 #### 8. Delete loomwork placeholder content
 

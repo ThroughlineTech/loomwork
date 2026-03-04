@@ -144,7 +144,7 @@ if (section) {
   .longform {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 4rem); /* viewport-fitted: fills below header */
+    height: calc(100vh - var(--header-height)); /* viewport-fitted: fills below header */
     overflow: hidden; /* prevent page-level scroll */
   }
 
@@ -304,7 +304,7 @@ if (section) {
   @media (min-width: 960px) {
     .longform {
       flex-direction: row;
-      height: calc(100vh - 4rem);
+      height: calc(100vh - var(--header-height));
     }
 
     /* Sidebar */

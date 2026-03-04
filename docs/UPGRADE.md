@@ -37,8 +37,6 @@ merge or accept the upstream version.
 | `src/layouts/Longform.astro` | Split-panel deep dive layout |
 | `src/components/Callout.astro` | Callout component |
 | `src/components/DemoControl.astro` | Demo theme switcher |
-| `src/components/Footer.astro` | Footer component |
-| `src/components/Header.astro` | Header component |
 | `src/components/ReaderControls.astro` | Reader preferences panel |
 | `src/components/ReadingEnhancements.astro` | Reading enhancements |
 | `src/components/TableOfContents.astro` | TOC sidebar component |
@@ -80,6 +78,8 @@ If this produces output, record what changed and why before proceeding.
 - `src/site.config.ts`
 - `src/styles/site.css`
 - `src/pages/index.astro`
+- `src/components/Header.astro` (ships as a starter — customize freely)
+- `src/components/Footer.astro` (ships as a starter — customize freely)
 - `src/content/pages/*.mdx`
 - `src/content/posts/*.mdx`
 - `astro.config.mjs`
@@ -314,7 +314,9 @@ New components can be used in your MDX files going forward.
 
 **CSS variable changes in `global.css`:** If loomwork renames or removes a
 CSS variable you reference in `site.css`, your styles may break silently.
-See Step 6 for how to check.
+See Step 6 for how to check. See also
+[CSS-ARCHITECTURE.md](CSS-ARCHITECTURE.md) for the full variable reference
+table and guidance on writing theme-compatible `site.css`.
 
 **Content schema changes in `content.config.ts`:** If the schema for content
 collections changes, your MDX frontmatter may fail validation. Check the build

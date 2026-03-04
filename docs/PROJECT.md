@@ -276,7 +276,10 @@ loomwork/
 ## Key Design Decisions
 
 ### Framework-file vs. site-file separation
-Files are clearly marked. `site.config.ts`, `site.css`, and everything in `content/` are yours. Everything else is a framework file — upstream `git merge loomwork/main` updates them cleanly without conflicts.
+Files are clearly marked. `site.config.ts`, `site.css`, `Header.astro`, `Footer.astro`, and everything in `content/` are yours. Everything else is a framework file — upstream `git merge loomwork/main` updates them cleanly without conflicts.
+
+For a deep dive on CSS specificity, cascade order, and how to write `site.css`
+correctly, see [CSS-ARCHITECTURE.md](CSS-ARCHITECTURE.md).
 
 ### CSS custom properties for theming
 Themes override CSS variables on `:root`. This means:
@@ -284,6 +287,7 @@ Themes override CSS variables on `:root`. This means:
 - Runtime theme changes are instant (swap the `<link>` href)
 - Dark mode is a second set of variable overrides — same mechanism, no duplication
 - Site authors can override any variable in `site.css`
+- See [CSS-ARCHITECTURE.md](CSS-ARCHITECTURE.md) for cascade order, specificity details, and the canonical variable reference table
 
 ### Data attributes for reader preferences
 Using `data-*` attributes on `<html>` (rather than classes or inline styles) because:

@@ -258,9 +258,13 @@ components. This is safe because:
 - A file that only exists in your repo will never conflict
 
 Framework component names to avoid (these are taken):
-`Callout.astro`, `DemoControl.astro`, `Footer.astro`, `Header.astro`,
-`ReaderControls.astro`, `ReadingEnhancements.astro`, `TableOfContents.astro`,
-`ThemePicker.astro`, `YouTube.astro`
+`Callout.astro`, `DemoControl.astro`, `ReaderControls.astro`,
+`ReadingEnhancements.astro`, `TableOfContents.astro`, `ThemePicker.astro`,
+`YouTube.astro`
+
+**`Header.astro` and `Footer.astro` are site files** — Loomwork ships starter
+versions, but you are expected to customize them. They will not be overwritten
+by framework upgrades.
 
 Anything else (e.g., `CaseStudy.astro`, `HeroStats.astro`, `PricingTable.tsx`)
 is yours and will merge cleanly forever.

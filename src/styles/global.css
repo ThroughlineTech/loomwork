@@ -48,6 +48,7 @@
   --content-width: 52rem;
   --wide-width:    72rem;
   --full-width:    90rem;
+  --header-height: 4rem;
 
   /* Misc */
   --radius:     0.375rem;
@@ -81,6 +82,7 @@ img, video, svg {
 .body--longform {
   overflow: hidden;
   height: 100vh;
+  padding-top: var(--header-height);
 }
 
 /* ── Base ────────────────────────────────────────────────── */
