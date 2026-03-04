@@ -1,0 +1,72 @@
+---
+title: "Progress"
+description: "What's been built, fixed, and improved — a running changelog."
+template: "guide"
+date_created: 2026-02-12
+date_updated: 2026-03-04
+nav_order: 90
+---
+
+## March 4, 2026
+
+- ✦ Auto-rotating feature showcase on the homepage — 6 features, dot nav, hover-to-pause
+- ✦ New `--header-height` CSS variable — sites with custom headers override one value instead of hacking layouts
+- ◈ Longform layout uses the header-height variable — no more hardcoded `4rem` in two places
+- ◈ `body--longform` gets automatic padding-top for fixed-position headers
+- ✎ New CSS Architecture doc — cascade order, specificity rules, canonical variable table, dark mode patterns
+- ✎ UPGRADE-PROMPT step 7 rewritten with prescriptive sed commands and complete token mapping
+- ✎ `fonts_url` clearing is now a loud, explicit step in the upgrade flow
+- ⚙ Header.astro and Footer.astro reclassified as site files — upgrades no longer overwrite your custom header
+- ✓ Feature rotator fixed height eliminates footer bounce during transitions
+
+## March 3, 2026
+
+- ✦ Upgrade prompt rewritten to complete within agent turn limits — canned longform page, single build cycle
+- ✎ Migration guide updated for 2.0: themes, reader controls, longform template
+- ✎ Upgrade prompt updated for 1.0→2.0 path with full conflict resolution
+- ✎ Verification prompt aligned with 2.0 features
+- ✎ README updated with longform template docs and missing framework files
+- ⚙ Migration gaps closed: 5 fixes for throughlinetech compatibility
+- ⚙ Verification workflow repo name typo fixed (vloomwork → loomwork)
+
+## March 2, 2026
+
+- ✦ Security audit completed — PAT encryption, feature branch commits, service worker hardening
+- ✦ Rate limiting added to GitHub API calls in mobile editor
+- ⚙ Mobile editor disabled pending security review
+- ⚙ YAML library added for safer config parsing
+
+## February 28, 2026
+
+- ✦ Longform page template — split-panel layout with fixed sidebar index and scroll containment
+- ✦ FOUC prevention — `document.write()` theme loading eliminates flash of wrong stylesheet
+- ✦ Callout component dark mode support
+- ◈ Light/dark mode toggle fixed — first click always does the right thing
+- ✎ Added longform to deploy guide and page-types nav
+
+## February 21, 2026
+
+- ✦ 10 built-in themes: Manuscript, Brutalist, Atelier, Terminal, Gazette, Alpine, Campfire, Moonrise, Field Notes, Neon
+- ✦ Reader Controls — floating panel for dark mode, font size, content width, focus mode, theme switching
+- ✦ Three-state Table of Contents — full, numbered pills, or hidden
+- ◈ Theming bugfixes and narrow/wide layout fixes for homescreen installs
+- ⚙ Framework core updated and stabilized
+
+## February 17, 2026
+
+- ✦ Mobile editor PWA — draft and publish from your phone at /mobile
+- ✦ Image upload support in mobile editor
+- ✦ Last commit timestamp displayed in site footer
+- ◈ Mobile-responsive improvements to framework CSS, header, and content layout
+- ◈ Mobile accessibility improvements — touch targets, focus management
+- ✓ UTF-8 decoding fix in mobile editor — non-ASCII characters no longer corrupted
+- ✓ Mojibake scrubbed — em-dashes and special characters cleaned up
+
+## February 12, 2026
+
+- ✦ Loomwork v1.0 — initial release
+- ✦ Framework/site file separation for clean upstream merges
+- ✦ Content Collections with Zod schema validation
+- ✦ Cloudflare Pages deployment with auto-deploy on push
+- ◈ Header logo with accent mark
+- ✎ Fork/rebrand documentation for new site setup

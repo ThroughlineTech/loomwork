@@ -29,6 +29,7 @@ export const SITE = {
     { label: "Page Types", href: "/page-types" },
     { label: "Controls", href: "/reader-controls" },
     { label: "Deploy", href: "/guide" },
+    { label: "Progress", href: "/progress" },
   ],
 
   // ── Fonts ───────────────────────────────────────────────
