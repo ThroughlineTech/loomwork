@@ -6,8 +6,9 @@ versions into an already-forked site), this covers the one-time process of
 adopting Loomwork from scratch.
 
 The target use case: you have a live site with content you want to keep, and you
-want Loomwork's theme system, reader controls, content collections, and
-zero-config Cloudflare deployment.
+want Loomwork's theme system (10 built-in themes with dark mode), reader controls
+(floating preferences panel), content collections, multiple page templates
+(including longform), and zero-config Cloudflare deployment.
 
 ---
 
@@ -16,9 +17,9 @@ zero-config Cloudflare deployment.
 The migration has four phases:
 
 1. **Scaffold** — Clone loomwork, set up your repo
-2. **Configure** — Set site identity, branding, nav
+2. **Configure** — Set site identity, pick a theme, enable reader controls
 3. **Migrate content** — Convert existing pages to MDX in content collections
-4. **Verify and deploy** — Build, test, push
+4. **Verify and deploy** — Build, test 2.0 features, push
 
 ---
 
@@ -65,6 +66,12 @@ rm -f public/images/1771364152056-image.jpg
 
 Keep `UPGRADE.md` — you'll need it for future framework updates.
 
+**Do NOT delete these framework files:**
+- `src/themes/_index.ts` (theme registry)
+- `public/themes/*.css` (10 built-in theme stylesheets)
+- `public/mobile/` (PWA manifest and service worker)
+- `public/_headers`, `public/_redirects`, `public/.assetsignore`
+
 ### 1.4 Install dependencies
 
 ```bash
@@ -95,7 +102,9 @@ export const SITE = {
     // ... your pages
   ],
 
-  fonts_url: "https://fonts.googleapis.com/css2?family=YourFont:wght@400;700&display=swap",
+  // Leave empty — the theme loads its own fonts automatically.
+  // Only set this if you want to override the theme's font choices.
+  fonts_url: "",
 
   social: {
     github: "https://github.com/you",
@@ -106,26 +115,41 @@ export const SITE = {
     license: "MIT License",  // or remove
   },
 
-  theme: "manuscript",  // or any of the 10 built-in themes
-  reader_controls: false,  // true to enable the floating preferences panel
+  // Pick a built-in theme — provides full color palette, fonts, dark mode:
+  // "manuscript", "brutalist", "atelier", "terminal", "gazette",
+  // "alpine", "campfire", "moonrise", "fieldnotes", "neon"
+  theme: "manuscript",
+
+  // Floating reader preferences panel (dark mode, font size, TOC, width, focus)
+  reader_controls: true,
 };
 ```
 
 ### 2.2 Site styles (`src/styles/site.css`)
 
-Override CSS custom properties to match your brand:
+Since you picked a theme above, the theme already provides a complete color
+palette, font stack, and dark mode. You do **not** need to redefine all the
+CSS variables.
+
+Keep `site.css` minimal — only override what's specific to your brand:
 
 ```css
+/* src/styles/site.css */
 :root {
+  /* Optional: tweak the theme's accent color to match your brand */
   --color-accent:       #2d6a4f;
   --color-accent-hover: #1b4332;
-  --color-accent-light: #d1fae5;
-  --font-heading: "Your Heading Font", Georgia, serif;
-  --font-body: "Your Body Font", system-ui, sans-serif;
 }
+
+/* Any site-specific styles go here too */
 ```
 
-If you need custom styles beyond variable overrides, add them here too.
+**Do NOT** redefine the full color palette (`--color-bg`, `--color-text`,
+`--color-surface`, etc.) or font families — that's the theme's job. If you
+need to override fonts, set `fonts_url` in site.config.ts and override
+`--font-body` / `--font-heading` here.
+
+Goal: `site.css` should be under ~30 lines of variable overrides at most.
 
 ### 2.3 Astro config (`astro.config.mjs`)
 
@@ -172,6 +196,13 @@ import { SITE } from "../site.config";
   </main>
 </Base>
 ```
+
+**Important:** Use CSS variables for all colors on the homepage — do not
+hardcode hex values. This ensures the page respects themes and dark mode:
+- Backgrounds: `var(--color-bg)`, `var(--color-bg-alt)`, `var(--color-surface)`
+- Text: `var(--color-text)`, `var(--color-text-muted)`
+- Accent: `var(--color-accent)`, `var(--color-accent-hover)`, `var(--color-accent-light)`
+- Borders: `var(--color-border)`
 
 ### 2.7 README
 
@@ -223,6 +254,11 @@ Choose templates based on page purpose:
 | `guide` | Documentation, tutorials — sticky TOC sidebar on desktop |
 | `tool` | Utility pages with React components |
 | `longform` | Deep dives, case studies — split-panel with fixed sidebar |
+
+**Use at least one `longform` page.** This is a key 2.0 feature — the
+split-panel layout with a fixed sidebar is ideal for deep dives, case studies,
+or any long-form content. It verifies the Longform.astro layout works in your
+site.
 
 ### 3.4 Using components in MDX
 
@@ -283,8 +319,10 @@ npm run build
 Confirm:
 - Zero errors (warnings about sharp/KV are expected)
 - All your content pages appear in the output
-- Homepage renders
-- Mobile editor renders (`/mobile/index.html`)
+- Homepage renders (`dist/index.html`)
+- Mobile editor renders (`dist/mobile/index.html`)
+- All 10 theme CSS files are in `dist/themes/` (alpine.css, atelier.css, brutalist.css, campfire.css, fieldnotes.css, gazette.css, manuscript.css, moonrise.css, neon.css, terminal.css)
+- No loomwork placeholder page slugs in the output (about_Loomwork, guide, mobile-app, building, theming, page-types, reader-controls)
 
 ### 4.2 Dev server
 
@@ -296,7 +334,10 @@ Walk through every page at http://localhost:4321. Check:
 - All nav links resolve to real pages
 - No dead links in content
 - Images load correctly
-- Theme looks right
+- The theme is visibly active (styled fonts, colors, not raw system defaults)
+- The reader controls gear icon (⚙) appears in the bottom-right corner
+- Dark mode toggle works in the reader controls panel
+- The longform template page renders with the split-panel layout
 - Mobile responsive layout works
 
 ### 4.3 Scrub for leftover references
@@ -362,10 +403,14 @@ Mapping to Loomwork:
 | Existing page | Loomwork approach |
 |---------------|-------------------|
 | Homepage | Custom `src/pages/index.astro` — full control |
-| Case Studies | `guide` or `longform` template with structured MDX |
+| Case Studies | `longform` template — split-panel layout is ideal for structured narratives |
 | About | `default` template |
 | Projects | `guide` template with cards in MDX |
 | Contact | Custom `src/pages/start.astro` or `default` template with mailto links |
+
+Theme recommendation for consulting/professional sites: `manuscript` (warm,
+editorial) or `alpine` (clean, modern). Enable `reader_controls: true` —
+clients appreciate dark mode and font size control.
 
 For case study pages with repeated structure (NOTICED / BUILT / RESULT), create
 a custom Astro component and import it in MDX:
