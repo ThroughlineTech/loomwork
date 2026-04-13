@@ -1,0 +1,74 @@
+---
+import { getCollection } from "astro:content";
+import Content from "../../layouts/Content.astro";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts", ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.id.replace(/\.mdx?$/, "") },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content: RenderedContent, headings } = await post.render();
+---
+
+<Content
+  title={post.data.title}
+  description={post.data.description}
+  template="default"
+  hero_image={post.data.hero_image}
+  hero_alt={post.data.hero_alt}
+  date_updated={post.data.date}
+  headings={headings}
+  body={post.body}
+>
+  <div class="post-meta">
+    <span class="post-meta__author">By {post.data.author}</span>
+    {post.data.tags.length > 0 && (
+      <div class="post-meta__tags">
+        {post.data.tags.map((tag) => (
+          <span class="post-meta__tag">{tag}</span>
+        ))}
+      </div>
+    )}
+  </div>
+  <RenderedContent />
+</Content>
+
+<style>
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-block-end: var(--space-lg);
+    flex-wrap: wrap;
+  }
+
+  .post-meta__author {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  .post-meta__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .post-meta__tag {
+    font-size: 0.75rem;
+    padding: 0.125rem var(--space-sm);
+    background: var(--color-surface, #f1f5f9);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+  }
+
+  :global([data-dark="true"]) .post-meta__tag {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: var(--color-border);
+  }
+</style>

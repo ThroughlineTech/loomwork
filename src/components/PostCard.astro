@@ -1,0 +1,99 @@
+---
+interface Props {
+  title: string;
+  date: Date;
+  description: string;
+  tags: string[];
+  slug: string;
+  body: string;
+}
+
+const { title, date, description, tags, slug, body } = Astro.props;
+
+const readingTime = Math.max(1, Math.round(body.trim().split(/\s+/).length / 230));
+const formattedDate = date.toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+---
+
+<article class="post-card">
+  <a href={`/posts/${slug}`} class="post-card__link">
+    <h2 class="post-card__title">{title}</h2>
+    <div class="post-card__meta text-muted text-sm">
+      <span>{formattedDate}</span>
+      <span aria-hidden="true">&middot;</span>
+      <span>{readingTime} min read</span>
+    </div>
+    <p class="post-card__description">{description}</p>
+  </a>
+  {tags.length > 0 && (
+    <div class="post-card__tags">
+      {tags.map((tag) => (
+        <span class="post-card__tag">{tag}</span>
+      ))}
+    </div>
+  )}
+</article>
+
+<style>
+  .post-card {
+    padding-block: var(--space-lg);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .post-card__link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .post-card__title {
+    margin: 0;
+    font-size: 1.25rem;
+    transition: color 0.15s ease;
+  }
+
+  .post-card__link:hover .post-card__title {
+    color: var(--color-accent, #3b82f6);
+  }
+
+  .post-card__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-block-start: var(--space-xs);
+    flex-wrap: wrap;
+  }
+
+  .post-card__description {
+    margin-block-start: var(--space-sm);
+    margin-block-end: 0;
+    color: var(--color-text-muted);
+  }
+
+  .post-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-block-start: var(--space-sm);
+  }
+
+  .post-card__tag {
+    font-size: 0.75rem;
+    padding: 0.125rem var(--space-sm);
+    background: var(--color-surface, #f1f5f9);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+  }
+
+  :global([data-dark="true"]) .post-card {
+    border-color: var(--color-border);
+  }
+
+  :global([data-dark="true"]) .post-card__tag {
+    background: #1e293b;
+    color: #94a3b8;
+  }
+</style>
