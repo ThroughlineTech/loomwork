@@ -1,0 +1,20 @@
+---
+title: "Themes and Customization"
+description: "A quick look at how Loomwork themes work and how to make a site your own."
+date: 2026-04-07
+author: "Dan"
+tags: ["theming", "design"]
+draft: false
+---
+
+One of the first things you'll want to do with a new Loomwork site is make it look like yours. The theming system is designed to make that straightforward without requiring deep CSS knowledge.
+
+Loomwork ships with several built-in themes: Manuscript, Brutalist, Atelier, Terminal, Gazette, Alpine, Campfire, Moonrise, Fieldnotes, and Neon. Each theme sets typography, colors, and spacing through CSS custom properties. Switching themes is a single line change in `site.config.ts`.
+
+Themes load their own fonts automatically from Google Fonts. If you want to override the font choices, set the `fonts_url` field in your site config. Leave it empty to use whatever the theme provides.
+
+Beyond themes, the Reader Controls panel gives visitors runtime options: dark mode, font size, content width, and a focus mode that dims the header and footer. These preferences persist in local storage, so they survive page navigations and return visits.
+
+For deeper customization, `src/styles/site.css` is your escape hatch. Any CSS you write there overrides the theme defaults. The design token system (custom properties like `--space-md`, `--color-border`, `--radius`) means you can adjust broad strokes without touching individual components.
+
+The goal is layers: pick a theme for the broad strokes, tweak tokens for your brand, and use `site.css` for anything truly custom.

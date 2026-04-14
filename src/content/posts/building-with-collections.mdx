@@ -1,0 +1,16 @@
+---
+title: "Building with Content Collections"
+description: "How Loomwork uses Astro Content Collections to turn MDX files into typed, validated pages."
+date: 2026-04-10
+author: "Dan"
+tags: ["framework", "astro"]
+draft: false
+---
+
+Content collections are the backbone of how Loomwork turns folders of MDX files into a structured, type-safe website. Every page and post starts as a Markdown file with a YAML frontmatter block, and Astro validates each field against a schema at build time.
+
+This means you get instant feedback if a required field is missing or a value is the wrong type. No more silent failures where a page renders with a blank title because you forgot to add one.
+
+The schema lives in `src/content.config.ts`. Pages and posts each have their own collection with their own fields. Pages support templates, sections, and navigation ordering. Posts are simpler: a title, date, description, and optional tags.
+
+When you run `astro build`, the framework reads every file in `src/content/pages/` and `src/content/posts/`, validates the frontmatter, and generates typed route data. Your page templates receive fully typed props with no manual parsing needed.
