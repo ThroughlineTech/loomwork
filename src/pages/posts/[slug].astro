@@ -4,13 +4,24 @@ import Content from "../../layouts/Content.astro";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
-  return posts.map((post) => ({
-    params: { slug: post.id.replace(/\.mdx?$/, "") },
-    props: { post },
-  }));
+  const sorted = [...posts].sort(
+    (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+  );
+  return sorted.map((post, i) => {
+    const prev = sorted[i + 1]; // older
+    const next = sorted[i - 1]; // newer
+    return {
+      params: { slug: post.id.replace(/\.mdx?$/, "") },
+      props: {
+        post,
+        prevPost: prev ? { title: prev.data.title, slug: prev.id.replace(/\.mdx?$/, "") } : null,
+        nextPost: next ? { title: next.data.title, slug: next.id.replace(/\.mdx?$/, "") } : null,
+      },
+    };
+  });
 }
 
-const { post } = Astro.props;
+const { post, prevPost, nextPost } = Astro.props;
 const { Content: RenderedContent, headings } = await post.render();
 ---
 
@@ -35,6 +46,21 @@ const { Content: RenderedContent, headings } = await post.render();
     )}
   </div>
   <RenderedContent />
+
+  {(prevPost || nextPost) && (
+    <nav class="post-nav" aria-label="Post navigation">
+      {prevPost ? (
+        <a href={`/posts/${prevPost.slug}/`} class="post-nav__link post-nav__link--prev">
+          <span aria-hidden="true">&larr;</span> {prevPost.title}
+        </a>
+      ) : <span />}
+      {nextPost && (
+        <a href={`/posts/${nextPost.slug}/`} class="post-nav__link post-nav__link--next">
+          {nextPost.title} <span aria-hidden="true">&rarr;</span>
+        </a>
+      )}
+    </nav>
+  )}
 </Content>
 
 <style>
@@ -70,5 +96,43 @@ const { Content: RenderedContent, headings } = await post.render();
     background: #1e293b;
     color: #94a3b8;
     border-color: var(--color-border);
+  }
+
+  .post-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-md, 1rem);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-xl, 2rem);
+    margin-top: var(--space-xl, 2rem);
+  }
+
+  .post-nav__link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: var(--text-sm, 0.875rem);
+    transition: color var(--transition, 0.2s ease);
+  }
+
+  .post-nav__link:hover {
+    color: var(--color-accent-hover);
+  }
+
+  .post-nav__link--next {
+    margin-inline-start: auto;
+    text-align: end;
+  }
+
+  @media (max-width: 480px) {
+    .post-nav {
+      flex-direction: column;
+      gap: var(--space-sm, 0.5rem);
+    }
+
+    .post-nav__link--next {
+      margin-inline-start: 0;
+      text-align: start;
+    }
   }
 </style>
