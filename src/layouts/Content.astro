@@ -12,6 +12,9 @@ interface Props {
   headings?: { depth: number; slug: string; text: string }[];
   /** Raw body text for reading time calc. Passed automatically from [...slug].astro */
   body?: string;
+  /** Optional prev/next links rendered above the page header */
+  prevLink?: { title: string; href: string } | null;
+  nextLink?: { title: string; href: string } | null;
 }
 
 const {
@@ -23,6 +26,8 @@ const {
   date_updated,
   headings = [],
   body = "",
+  prevLink = null,
+  nextLink = null,
 } = Astro.props;
 
 /* Reading time estimate: ~230 words per minute */
@@ -51,6 +56,22 @@ const containerClass = isLanding || isTool
     )}
 
     <div class={containerClass}>
+      {/* Prev/next navigation (above header) */}
+      {(prevLink || nextLink) && (
+        <nav class="page-nav page-nav--top" aria-label="Post navigation">
+          {prevLink ? (
+            <a href={prevLink.href} class="page-nav__link page-nav__link--prev">
+              <span aria-hidden="true">&larr;</span> {prevLink.title}
+            </a>
+          ) : <span />}
+          {nextLink && (
+            <a href={nextLink.href} class="page-nav__link page-nav__link--next">
+              {nextLink.title} <span aria-hidden="true">&rarr;</span>
+            </a>
+          )}
+        </nav>
+      )}
+
       {/* Page header */}
       {!isTool && (
         <header class="page__header">
@@ -93,6 +114,46 @@ const containerClass = isLanding || isTool
 </Base>
 
 <style>
+  .page-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-md, 1rem);
+  }
+
+  .page-nav--top {
+    padding-block-start: var(--space-lg);
+    padding-block-end: var(--space-md);
+  }
+
+  .page-nav__link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: var(--text-sm, 0.875rem);
+    transition: color var(--transition, 0.2s ease);
+  }
+
+  .page-nav__link:hover {
+    color: var(--color-accent-hover);
+  }
+
+  .page-nav__link--next {
+    margin-inline-start: auto;
+    text-align: end;
+  }
+
+  @media (max-width: 480px) {
+    .page-nav {
+      flex-direction: column;
+      gap: var(--space-sm, 0.5rem);
+    }
+
+    .page-nav__link--next {
+      margin-inline-start: 0;
+      text-align: start;
+    }
+  }
+
   .page__hero {
     max-height: 24rem;
     overflow: hidden;
